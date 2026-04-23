@@ -4,82 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WellPath Analyst</title>
+
+<!-- External libraries (CDN) -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+
+<!-- Fonts & icons -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<style>
-:root{--bg:#0a0f1e;--card:#111a2e;--card2:#162035;--border:#1e2d4a;--text:#dce4ef;--muted:#6b7fa0;--accent:#e8a000;--accent2:#ffc844;--plan:#3e9fff;--survey:#e8a000;--success:#10d4a0;--danger:#f04444;--info:#4ea8ff}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
-.mono{font-family:'JetBrains Mono',monospace}
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:var(--bg)}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:var(--muted)}
-.tab-btn{padding:10px 20px;border:none;background:transparent;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .25s}
-.tab-btn:hover{color:var(--text)}
-.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
-.tab-content{display:none;animation:fadeUp .3s ease}
-.tab-content.active{display:block}
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px}
-.card2{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:16px}
-input,select{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border .2s}
-input:focus,select:focus{border-color:var(--accent)}
-select option{background:var(--card);color:var(--text)}
-.btn{padding:9px 20px;border:none;border-radius:6px;font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
-.btn-accent{background:var(--accent);color:#0a0f1e}.btn-accent:hover{background:var(--accent2)}
-.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
-.btn-danger{background:var(--danger);color:#fff}.btn-danger:hover{opacity:.85}
-.btn-sm{padding:5px 12px;font-size:12px}
-table{width:100%;border-collapse:collapse;font-size:12px}
-th{background:var(--card2);color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;text-align:left;position:sticky;top:0;z-index:2}
-td{padding:6px 10px;border-bottom:1px solid var(--border)}
-tr:hover td{background:rgba(232,160,0,.04)}
-.table-wrap{max-height:340px;overflow:auto;border-radius:8px;border:1px solid var(--border)}
-.stat-card{text-align:center;padding:16px 12px}
-.stat-val{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace}
-.stat-label{font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
-.toast-container{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px}
-.toast{padding:12px 20px;border-radius:8px;font-size:13px;font-weight:500;animation:slideIn .3s ease;min-width:250px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
-.toast-success{background:#0d3d30;border:1px solid #10d4a0;color:#10d4a0}
-.toast-error{background:#3d0d0d;border:1px solid #f04444;color:#f04444}
-.toast-info{background:#0d2a3d;border:1px solid #4ea8ff;color:#4ea8ff}
-@keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
-.file-zone{border:2px dashed var(--border);border-radius:10px;padding:30px;text-align:center;cursor:pointer;transition:all .25s}
-.file-zone:hover{border-color:var(--accent);background:rgba(232,160,0,.04)}
-.file-zone.loaded{border-color:var(--success);border-style:solid}
-canvas{border-radius:8px;background:#0d1526}
-.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
-.badge-plan{background:rgba(62,159,255,.15);color:var(--plan)}
-.badge-survey{background:rgba(232,160,0,.15);color:var(--survey)}
-.query-result{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
-.query-item{padding:10px 12px;background:var(--card2);border-radius:6px;border:1px solid var(--border)}
-.query-item .q-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.query-item .q-val{font-size:16px;font-weight:700;margin-top:2px;font-family:'JetBrains Mono',monospace}
-.section-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
-@media(prefers-reduced-motion:reduce){*{animation-duration:0s!important;transition-duration:0s!important}}
-.modal-backdrop{position:fixed;inset:0;background:rgba(5,10,22,.75);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
-.modal-backdrop.active{display:flex;animation:fadeUp .25s ease}
-.modal-box{background:var(--card);border:1px solid var(--border);border-radius:12px;max-width:520px;width:100%;padding:28px;position:relative}
-.modal-close{position:absolute;top:12px;right:14px;background:transparent;border:none;color:var(--muted);font-size:18px;cursor:pointer}
-.modal-close:hover{color:var(--accent)}
-footer{border-top:1px solid var(--border);padding:20px 24px;margin-top:40px;text-align:center;color:var(--muted);font-size:12px;background:var(--card)}
-footer a{color:var(--accent);text-decoration:none}
-footer a:hover{text-decoration:underline}
-</style>
+
+<!-- Local stylesheet -->
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<!-- Toast Container -->
 <div class="toast-container" id="toasts"></div>
 
-<!-- Header -->
+<!-- ================= HEADER ================= -->
 <header style="background:linear-gradient(180deg,rgba(17,26,46,.95),var(--bg));border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;backdrop-filter:blur(12px)">
   <div style="display:flex;align-items:center;gap:12px">
     <div style="width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#d48800);display:flex;align-items:center;justify-content:center">
@@ -96,7 +40,7 @@ footer a:hover{text-decoration:underline}
   </div>
 </header>
 
-<!-- Tab Navigation -->
+<!-- ================= TABS ================= -->
 <nav style="background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:4px;overflow-x:auto">
   <button class="tab-btn active" onclick="switchTab('import')"><i class="fas fa-file-import" style="margin-right:6px"></i>Import</button>
   <button class="tab-btn" onclick="switchTab('data')"><i class="fas fa-table" style="margin-right:6px"></i>Data</button>
@@ -105,1389 +49,252 @@ footer a:hover{text-decoration:underline}
   <button class="tab-btn" onclick="switchTab('formations')"><i class="fas fa-layer-group" style="margin-right:6px"></i>Formations</button>
 </nav>
 
+<!-- ================= MAIN ================= -->
 <main style="max-width:1400px;margin:0 auto;padding:24px">
 
-<!-- ============ IMPORT TAB ============ -->
-<div class="tab-content active" id="tab-import">
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
-    <!-- Plan File -->
-    <div class="card">
-      <div class="section-title"><i class="fas fa-drafting-compass" style="color:var(--plan)"></i> Plan File</div>
-      <div class="file-zone" id="planZone" onclick="document.getElementById('planFile').click()">
-        <input type="file" id="planFile" accept=".csv,.las,.xlsx,.xls" style="display:none" onchange="handleFileUpload('plan',this)">
-        <i class="fas fa-cloud-upload-alt" style="font-size:28px;color:var(--muted);margin-bottom:8px"></i>
-        <p style="font-size:13px;color:var(--muted)">Upload CSV, LAS, or Excel file</p>
-        <p style="font-size:11px;color:var(--border);margin-top:4px">Must contain MD, Inclination, Azimuth columns</p>
+  <!-- ---------- IMPORT TAB ---------- -->
+  <div class="tab-content active" id="tab-import">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
+      <div class="card">
+        <div class="section-title"><i class="fas fa-drafting-compass" style="color:var(--plan)"></i> Plan File</div>
+        <div class="file-zone" id="planZone" onclick="document.getElementById('planFile').click()">
+          <input type="file" id="planFile" accept=".csv,.las,.xlsx,.xls" style="display:none" onchange="handleFileUpload('plan',this)">
+          <i class="fas fa-cloud-upload-alt" style="font-size:28px;color:var(--muted);margin-bottom:8px"></i>
+          <p style="font-size:13px;color:var(--muted)">Upload CSV, LAS, or Excel file</p>
+        </div>
+        <div id="planPreview" style="margin-top:16px;display:none">
+          <div class="section-title" style="font-size:11px">Preview</div>
+          <div class="table-wrap" id="planPreviewTable"></div>
+          <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">MD</label><select id="planMD" class="mono" style="width:100%"></select></div>
+            <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Inc</label><select id="planInc" class="mono" style="width:100%"></select></div>
+            <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Azi</label><select id="planAzi" class="mono" style="width:100%"></select></div>
+          </div>
+        </div>
       </div>
-      <div id="planPreview" style="margin-top:16px;display:none">
-        <div class="section-title" style="font-size:11px">Preview (first 10 rows)</div>
-        <div class="table-wrap" id="planPreviewTable"></div>
-        <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-          <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">MD Column</label><select id="planMD" class="mono" style="width:100%"></select></div>
-          <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Inc Column</label><select id="planInc" class="mono" style="width:100%"></select></div>
-          <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Azi Column</label><select id="planAzi" class="mono" style="width:100%"></select></div>
+      <div class="card">
+        <div class="section-title"><i class="fas fa-satellite-dish" style="color:var(--survey)"></i> Survey File</div>
+        <div class="file-zone" id="surveyZone" onclick="document.getElementById('surveyFile').click()">
+          <input type="file" id="surveyFile" accept=".csv,.las,.xlsx,.xls" style="display:none" onchange="handleFileUpload('survey',this)">
+          <i class="fas fa-cloud-upload-alt" style="font-size:28px;color:var(--muted);margin-bottom:8px"></i>
+          <p style="font-size:13px;color:var(--muted)">Upload CSV, LAS, or Excel file</p>
+        </div>
+        <div id="surveyPreview" style="margin-top:16px;display:none">
+          <div class="section-title" style="font-size:11px">Preview</div>
+          <div class="table-wrap" id="surveyPreviewTable"></div>
+          <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">MD</label><select id="surveyMD" class="mono" style="width:100%"></select></div>
+            <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Inc</label><select id="surveyInc" class="mono" style="width:100%"></select></div>
+            <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Azi</label><select id="surveyAzi" class="mono" style="width:100%"></select></div>
+          </div>
         </div>
       </div>
     </div>
-    <!-- Survey File -->
-    <div class="card">
-      <div class="section-title"><i class="fas fa-satellite-dish" style="color:var(--survey)"></i> Survey File</div>
-      <div class="file-zone" id="surveyZone" onclick="document.getElementById('surveyFile').click()">
-        <input type="file" id="surveyFile" accept=".csv,.las,.xlsx,.xls" style="display:none" onchange="handleFileUpload('survey',this)">
-        <i class="fas fa-cloud-upload-alt" style="font-size:28px;color:var(--muted);margin-bottom:8px"></i>
-        <p style="font-size:13px;color:var(--muted)">Upload CSV, LAS, or Excel file</p>
-        <p style="font-size:11px;color:var(--border);margin-top:4px">Must contain MD, Inclination, Azimuth columns</p>
+
+    <!-- Well metadata + Process controls -->
+    <div class="card" style="display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap">
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Well Name / ID</label>
+        <input type="text" id="wellName" placeholder="e.g. RN-142" style="width:180px" class="mono">
       </div>
-      <div id="surveyPreview" style="margin-top:16px;display:none">
-        <div class="section-title" style="font-size:11px">Preview (first 10 rows)</div>
-        <div class="table-wrap" id="surveyPreviewTable"></div>
-        <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-          <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">MD Column</label><select id="surveyMD" class="mono" style="width:100%"></select></div>
-          <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Inc Column</label><select id="surveyInc" class="mono" style="width:100%"></select></div>
-          <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Azi Column</label><select id="surveyAzi" class="mono" style="width:100%"></select></div>
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Field / Project</label>
+        <input type="text" id="wellField" placeholder="e.g. Rhourde Nouss" style="width:180px" class="mono">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">VS Reference Azimuth (deg)</label>
+        <input type="number" id="vsAzimuth" value="0" step="0.1" style="width:120px" class="mono">
+      </div>
+      <button class="btn btn-accent" onclick="processData()" style="padding:10px 32px;font-size:14px"><i class="fas fa-cogs" style="margin-right:6px"></i>Process Data</button>
+      <button class="btn btn-outline" onclick="loadSampleData()"><i class="fas fa-flask" style="margin-right:6px"></i>Load Sample Data</button>
+    </div>
+  </div>
+
+  <!-- ---------- DATA TAB ---------- -->
+  <div class="tab-content" id="tab-data">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
+      <div class="card">
+        <div class="section-title"><span class="badge badge-plan">PLAN</span> Stations <span id="planCount" class="mono" style="color:var(--muted);font-size:12px"></span></div>
+        <div class="table-wrap" id="planDataTable" style="max-height:400px"></div>
+      </div>
+      <div class="card">
+        <div class="section-title"><span class="badge badge-survey">SURVEY</span> Stations <span id="surveyCount" class="mono" style="color:var(--muted);font-size:12px"></span></div>
+        <div class="table-wrap" id="surveyDataTable" style="max-height:400px"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title"><i class="fas fa-plus-circle" style="color:var(--accent)"></i> Add Station Manually</div>
+      <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap">
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Add To</label><select id="addTarget" style="width:120px"><option value="survey">Survey</option><option value="plan">Plan</option></select></div>
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">MD (m)</label><input type="number" id="addMD" step="0.1" class="mono" style="width:110px"></div>
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Inc (deg)</label><input type="number" id="addInc" step="0.01" class="mono" style="width:110px"></div>
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Azi (deg)</label><input type="number" id="addAzi" step="0.01" class="mono" style="width:110px"></div>
+        <button class="btn btn-accent" onclick="addManualStation()"><i class="fas fa-plus" style="margin-right:4px"></i>Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- COMPARISON TAB ---------- -->
+  <div class="tab-content" id="tab-comparison">
+    <div class="range-bar">
+      <div style="display:flex;align-items:center;gap:6px"><i class="fas fa-filter" style="color:var(--accent)"></i><strong style="font-size:12px;text-transform:uppercase;letter-spacing:.8px">Depth Range Filter</strong></div>
+      <div style="display:flex;align-items:flex-end;gap:8px">
+        <div><label>Filter By</label><select id="rangeBy" style="width:90px"><option value="md">MD</option><option value="tvd">TVD</option></select></div>
+        <div><label>Min (m)</label><input type="number" id="rangeMin" step="1" class="mono" placeholder="auto"></div>
+        <div><label>Max (m)</label><input type="number" id="rangeMax" step="1" class="mono" placeholder="auto"></div>
+      </div>
+      <button class="btn btn-accent btn-sm" onclick="applyRange()"><i class="fas fa-check" style="margin-right:4px"></i>Apply</button>
+      <button class="btn btn-outline btn-sm" onclick="resetRange()"><i class="fas fa-undo" style="margin-right:4px"></i>Reset</button>
+      <div id="rangeIndicator" class="range-indicator empty" style="margin-left:auto">Full range</div>
+      <button class="btn btn-accent btn-sm" onclick="exportPDFReport()" title="Export PDF"><i class="fas fa-file-pdf" style="margin-right:6px"></i>Export PDF</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px" id="summaryCards"></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
+      <div class="plot-wrap">
+        <div class="plot-header">
+          <div class="plot-title"><i class="fas fa-compass"></i>Plan View — North vs East</div>
+          <div class="plot-actions">
+            <button class="btn btn-ghost" id="zoomBtnPlan" onclick="toggleZoomMode('planView')" title="Rectangle Zoom"><i class="fas fa-search-plus"></i> Zoom</button>
+            <button class="btn btn-ghost" id="resetBtnPlan" onclick="resetPlotZoom('planView')" title="Reset Zoom" style="display:none"><i class="fas fa-search-minus"></i> Reset</button>
+            <button class="btn btn-ghost" onclick="exportCanvasPNG('planViewCanvas','PlanView')" title="Export PNG"><i class="fas fa-download"></i> PNG</button>
+          </div>
+        </div>
+        <div class="plot-body" style="position:relative">
+          <canvas id="planViewCanvas" width="700" height="560"></canvas>
+          <div id="selRectPlan" style="position:absolute;border:1.5px dashed var(--accent);background:rgba(232,160,0,.08);pointer-events:none;display:none;z-index:10"></div>
+          <div id="tooltipPlan" class="canvas-tooltip"></div>
+        </div>
+      </div>
+
+      <div class="plot-wrap">
+        <div class="plot-header">
+          <div class="plot-title"><i class="fas fa-ruler-vertical"></i>Vertical Section — VS vs TVD</div>
+          <div class="plot-actions">
+            <button class="btn btn-ghost" id="zoomBtnVS" onclick="toggleZoomMode('vsView')" title="Rectangle Zoom"><i class="fas fa-search-plus"></i> Zoom</button>
+            <button class="btn btn-ghost" id="resetBtnVS" onclick="resetPlotZoom('vsView')" title="Reset Zoom" style="display:none"><i class="fas fa-search-minus"></i> Reset</button>
+            <button class="btn btn-ghost" onclick="exportCanvasPNG('vsCanvas','VerticalSection')" title="Export PNG"><i class="fas fa-download"></i> PNG</button>
+          </div>
+        </div>
+        <div class="plot-body" style="position:relative">
+          <canvas id="vsCanvas" width="700" height="560"></canvas>
+          <div id="selRectVS" style="position:absolute;border:1.5px dashed var(--accent);background:rgba(232,160,0,.08);pointer-events:none;display:none;z-index:10"></div>
+          <div id="tooltipVS" class="canvas-tooltip"></div>
         </div>
       </div>
     </div>
+
+    <div class="card">
+      <div class="section-title"><i class="fas fa-exchange-alt" style="color:var(--accent)"></i> Survey vs Plan Comparison</div>
+      <div class="table-wrap" id="comparisonTable" style="max-height:500px"></div>
+    </div>
   </div>
 
-  <!-- Settings & Process -->
-  <div class="card" style="display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap">
-    <div>
-      <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">VS Reference Azimuth (deg)</label>
-      <input type="number" id="vsAzimuth" value="0" step="0.1" style="width:120px" class="mono">
-    </div>
-    <button class="btn btn-accent" onclick="processData()" style="padding:10px 32px;font-size:14px"><i class="fas fa-cogs" style="margin-right:6px"></i>Process Data</button>
-    <button class="btn btn-outline" onclick="loadSampleData()"><i class="fas fa-flask" style="margin-right:6px"></i>Load Sample Data</button>
-  </div>
-</div>
-
-<!-- ============ DATA TAB ============ -->
-<div class="tab-content" id="tab-data">
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
-    <div class="card">
-      <div class="section-title"><span class="badge badge-plan">PLAN</span> Stations <span id="planCount" class="mono" style="color:var(--muted);font-size:12px"></span></div>
-      <div class="table-wrap" id="planDataTable" style="max-height:400px"></div>
-    </div>
-    <div class="card">
-      <div class="section-title"><span class="badge badge-survey">SURVEY</span> Stations <span id="surveyCount" class="mono" style="color:var(--muted);font-size:12px"></span></div>
-      <div class="table-wrap" id="surveyDataTable" style="max-height:400px"></div>
-    </div>
-  </div>
-  <!-- Manual Entry -->
-  <div class="card">
-    <div class="section-title"><i class="fas fa-plus-circle" style="color:var(--accent)"></i> Add Station Manually</div>
-    <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap">
-      <div>
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Add To</label>
-        <select id="addTarget" style="width:120px"><option value="survey">Survey</option><option value="plan">Plan</option></select>
+  <!-- ---------- QUERY TAB ---------- -->
+  <div class="tab-content" id="tab-query">
+    <div class="card" style="margin-bottom:24px">
+      <div class="section-title"><i class="fas fa-search" style="color:var(--accent)"></i> Query Parameters</div>
+      <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Query By</label><select id="queryType" style="width:130px"><option value="md">MD (m)</option><option value="tvd">TVD (m)</option><option value="vs">VS (m)</option></select></div>
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Value</label><input type="number" id="queryValue" step="0.1" class="mono" style="width:150px"></div>
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Source</label><select id="querySource" style="width:130px"><option value="both">Both</option><option value="plan">Plan Only</option><option value="survey">Survey Only</option></select></div>
+        <button class="btn btn-accent" onclick="runQuery()"><i class="fas fa-bolt" style="margin-right:4px"></i>Query</button>
       </div>
-      <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">MD (m)</label><input type="number" id="addMD" step="0.1" class="mono" style="width:110px"></div>
-      <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Inc (deg)</label><input type="number" id="addInc" step="0.01" class="mono" style="width:110px"></div>
-      <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Azi (deg)</label><input type="number" id="addAzi" step="0.01" class="mono" style="width:110px"></div>
-      <button class="btn btn-accent" onclick="addManualStation()"><i class="fas fa-plus" style="margin-right:4px"></i>Add</button>
     </div>
+    <div id="queryResults" style="display:grid;gap:24px"></div>
   </div>
-</div>
 
-<!-- ============ COMPARISON TAB ============ -->
-<div class="tab-content" id="tab-comparison">
-  <!-- Action Bar -->
-  <div style="display:flex;justify-content:flex-end;margin-bottom:12px;gap:8px">
-    <button class="btn btn-accent btn-sm" onclick="exportPDFReport()" title="Export plots and comparison table to PDF"><i class="fas fa-file-pdf" style="margin-right:6px"></i>Export PDF Report</button>
-  </div>
-  <!-- Summary Cards -->
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px" id="summaryCards"></div>
-  <!-- Canvas Plots -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
-    <div class="card">
-      <div class="section-title" style="font-size:11px">Plan View (North vs East)</div>
-      <canvas id="planViewCanvas" width="600" height="500" style="width:100%;height:auto"></canvas>
+  <!-- ---------- FORMATIONS TAB ---------- -->
+  <div class="tab-content" id="tab-formations">
+    <div class="card" style="margin-bottom:24px">
+      <div class="section-title"><i class="fas fa-layer-group" style="color:var(--accent)"></i> Add Formation Top</div>
+      <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap">
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Name</label><input type="text" id="fmName" style="width:170px" placeholder="e.g. Cap Rock"></div>
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">TVD (m)</label><input type="number" id="fmTVD" step="0.1" class="mono" style="width:110px"></div>
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Dip (°)</label><input type="number" id="fmDip" step="0.1" min="0" max="90" class="mono" style="width:90px" value="0"></div>
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Dip Azi (°)</label><input type="number" id="fmDipAzi" step="0.1" min="0" max="360" class="mono" style="width:100px" value="0"></div>
+        <button class="btn btn-accent" onclick="addFormation()"><i class="fas fa-plus" style="margin-right:4px"></i>Add</button>
+      </div>
+      <div class="hint"><i class="fas fa-info-circle"></i> Dip Azimuth = compass bearing of down-dip direction. Strike = Dip Azi − 90°.</div>
     </div>
-    <div class="card">
-      <div class="section-title" style="font-size:11px">Vertical Section (VS vs TVD)</div>
-      <canvas id="vsCanvas" width="600" height="500" style="width:100%;height:auto"></canvas>
-    </div>
-  </div>
-  <!-- Comparison Table -->
-  <div class="card">
-    <div class="section-title"><i class="fas fa-exchange-alt" style="color:var(--accent)"></i> Survey vs Plan Comparison</div>
-    <div class="table-wrap" id="comparisonTable" style="max-height:500px"></div>
-  </div>
-</div>
 
-<!-- ============ QUERY TAB ============ -->
-<div class="tab-content" id="tab-query">
-  <div class="card" style="margin-bottom:24px">
-    <div class="section-title"><i class="fas fa-search" style="color:var(--accent)"></i> Query Parameters</div>
-    <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
-      <div>
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Query By</label>
-        <select id="queryType" style="width:130px">
-          <option value="md">MD (m)</option>
-          <option value="tvd">TVD (m)</option>
-          <option value="vs">VS (m)</option>
-        </select>
-      </div>
-      <div>
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Value</label>
-        <input type="number" id="queryValue" step="0.1" class="mono" style="width:150px">
-      </div>
-      <div>
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Source</label>
-        <select id="querySource" style="width:130px">
-          <option value="both">Both</option>
-          <option value="plan">Plan Only</option>
-          <option value="survey">Survey Only</option>
-        </select>
-      </div>
-      <button class="btn btn-accent" onclick="runQuery()"><i class="fas fa-bolt" style="margin-right:4px"></i>Query</button>
-    </div>
-  </div>
-  <div id="queryResults" style="display:grid;gap:24px"></div>
-</div>
-
-<!-- ============ FORMATIONS TAB ============ -->
-<div class="tab-content" id="tab-formations">
-  <div class="card" style="margin-bottom:24px">
-    <div class="section-title"><i class="fas fa-layer-group" style="color:var(--accent)"></i> Add Formation Top</div>
-    <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap">
-      <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Name</label><input type="text" id="fmName" style="width:180px" placeholder="e.g. Cap Rock"></div>
-      <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">TVD (m)</label><input type="number" id="fmTVD" step="0.1" class="mono" style="width:130px"></div>
-      <button class="btn btn-accent" onclick="addFormation()"><i class="fas fa-plus" style="margin-right:4px"></i>Add</button>
-    </div>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
-    <div class="card">
+    <div class="card" style="margin-bottom:24px">
       <div class="section-title">Formation Tops</div>
       <div class="table-wrap" id="formationTopsTable"></div>
     </div>
+
     <div class="card">
-      <div class="section-title">Formation Statistics</div>
-      <div class="table-wrap" id="formationStatsTable"></div>
+      <div class="section-title">
+        <i class="fas fa-cubes" style="color:var(--formation)"></i> Formation Thickness Statistics
+        <span style="font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0;font-style:italic;margin-left:8px">MT | AVT | TVT | TST</span>
+      </div>
+      <div class="table-wrap" id="formationStatsTable" style="max-height:500px"></div>
     </div>
   </div>
-</div>
 
 </main>
 
-<!-- ===== FOOTER ===== -->
+<!-- ================= FOOTER ================= -->
 <footer>
   <div style="max-width:1400px;margin:0 auto">
     <strong style="color:var(--text)">WellPath Analyst</strong> — Minimum Curvature Survey Comparison Tool<br>
-    Developed by <a href="mailto:geoharkat@gmail.com">Ismail Harkat</a> &nbsp;·&nbsp; 
-    <a href="mailto:geoharkat@gmail.com">geoharkat@gmail.com</a> &nbsp;·&nbsp;
-    MIT License &nbsp;·&nbsp;
-    © <span id="footerYear"></span> Ismail Harkat &nbsp;·&nbsp;
-    <a href="#" onclick="openAbout();return false">About</a>
+    Developed by <a href="mailto:geoharkat@gmail.com">Ismail Harkat</a> &nbsp;·&nbsp; <a href="mailto:geoharkat@gmail.com">geoharkat@gmail.com</a> &nbsp;·&nbsp; MIT License &nbsp;·&nbsp; © <span id="footerYear"></span> Ismail Harkat
   </div>
 </footer>
 
-<!-- ===== ABOUT MODAL ===== -->
+<!-- ================= ABOUT MODAL ================= -->
 <div class="modal-backdrop" id="aboutModal" onclick="if(event.target===this)closeAbout()">
   <div class="modal-box">
     <button class="modal-close" onclick="closeAbout()" aria-label="Close"><i class="fas fa-times"></i></button>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-      <div style="width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#d48800);display:flex;align-items:center;justify-content:center">
-        <i class="fas fa-route" style="color:#0a0f1e;font-size:18px"></i>
-      </div>
-      <div>
-        <h2 style="font-size:18px;font-weight:900;letter-spacing:-.3px">About This Tool</h2>
-        <p style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">WellPath Analyst</p>
-      </div>
+      <div style="width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#d48800);display:flex;align-items:center;justify-content:center"><i class="fas fa-route" style="color:#0a0f1e;font-size:18px"></i></div>
+      <div><h2 style="font-size:18px;font-weight:900">About This Tool</h2><p style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">WellPath Analyst</p></div>
     </div>
-    <p style="font-size:13px;line-height:1.6;color:var(--text);margin-bottom:14px">
-      A client-side web application for comparing directional drilling survey data against the well plan using the <em>minimum curvature</em> method. All computations run entirely in the browser — no data leaves your machine.
+    <p style="font-size:13px;line-height:1.6;color:var(--text);margin-bottom:12px">
+      WellPath Analyst reconstructs and compares directional-well trajectories with the
+      <strong style="color:var(--accent)">Minimum Curvature Method (MCM)</strong> — the industry-standard
+      algorithm inside Compass, WellPlan, and StarSteer. MCM joins each pair of survey stations with a
+      smooth circular arc, yielding TVD, N/E, Vertical Section, DLS, and Closure that match commercial
+      survey-management packages to the centimetre.
     </p>
-    <div style="display:grid;grid-template-columns:90px 1fr;gap:8px 14px;font-size:13px;margin-bottom:16px">
-      <div style="color:var(--muted)">Developer</div><div>Ismail Harkat</div>
-      <div style="color:var(--muted)">Contact</div><div><a href="mailto:geoharkat@gmail.com" style="color:var(--accent);text-decoration:none">geoharkat@gmail.com</a></div>
-      <div style="color:var(--muted)">License</div><div>MIT License — free to use, modify, and distribute</div>
-      <div style="color:var(--muted)">Copyright</div><div>© <span id="modalYear"></span> Ismail Harkat. All rights reserved.</div>
-    </div>
-    <div style="padding:12px;background:var(--card2);border-radius:6px;border:1px solid var(--border);font-size:11px;color:var(--muted);line-height:1.5">
-      <strong style="color:var(--text)">Disclaimer:</strong> This tool is provided "as is" for engineering and educational purposes. Always cross-check results with your company's certified survey management software before making operational decisions.
-    </div>
+    <p style="font-size:13px;line-height:1.6;color:var(--text);margin-bottom:12px">
+      <strong>Built for</strong> wellsite geologists, directional drillers, and drilling engineers who need
+      a fast, offline, private way to QC rig-site surveys, compute deviations from plan for morning meetings,
+      analyse formation thickness (MT, AVT, TVT, TST) with true-dip corrections, and export a publication-
+      quality PDF for partners and JV reports. Everything runs in the browser — no cloud, no upload, no
+      leaked well data.
+    </p>
+    <p style="font-size:12px;line-height:1.55;color:var(--muted);margin-bottom:6px">
+      Developed by <strong style="color:var(--accent)">Ismail Harkat</strong> — Senior Wellsite Geologist,
+      Sonatrach (Rhourde Nouss, Algeria) — as an open-source companion to commercial survey-management
+      software. MIT License. Contact:
+      <a href="mailto:geoharkat@gmail.com" style="color:var(--accent)">geoharkat@gmail.com</a>.
+    </p>
+    <p style="font-size:11px;line-height:1.5;color:var(--muted);margin:0">
+      Architecture: <span class="mono" style="color:var(--text)">index.html</span> ·
+      <span class="mono" style="color:var(--text)">styles.css</span> ·
+      <span class="mono" style="color:var(--text)">js/*.js</span> (11 modules).
+    </p>
     <button class="btn btn-accent" style="width:100%;margin-top:16px" onclick="closeAbout()">Close</button>
   </div>
 </div>
 
-<script>
-/* ===== APPLICATION STATE ===== */
-const S = {
-  plan: { raw:[], headers:[], stations:[], results:[] },
-  survey: { raw:[], headers:[], stations:[], results:[] },
-  vsAzimuth: 0,
-  comparison: [],
-  formations: []
-};
-
-/* ===== TOAST NOTIFICATIONS ===== */
-function toast(msg, type='info') {
-  const el = document.createElement('div');
-  el.className = 'toast toast-' + type;
-  el.innerHTML = '<i class="fas fa-' + (type==='success'?'check-circle':type==='error'?'exclamation-circle':'info-circle') + '" style="margin-right:8px"></i>' + msg;
-  document.getElementById('toasts').appendChild(el);
-  setTimeout(() => { el.style.opacity='0'; el.style.transform='translateX(40px)'; el.style.transition='all .3s'; setTimeout(() => el.remove(), 300); }, 3500);
-}
-
-/* ===== TAB NAVIGATION ===== */
-function switchTab(name) {
-  document.querySelectorAll('.tab-btn').forEach((b,i) => {
-    const tabs = ['import','data','comparison','query','formations'];
-    b.classList.toggle('active', tabs[i] === name);
-  });
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  // Redraw canvases when switching to comparison
-  if (name === 'comparison') { setTimeout(() => { drawPlanView(); drawVS(); }, 100); }
-}
-
-/* ===== FILE PARSING ===== */
-async function handleFileUpload(type, input) {
-  const file = input.files[0];
-  if (!file) return;
-  const ext = file.name.split('.').pop().toLowerCase();
-  let data;
-  try {
-    if (ext === 'csv') data = await parseCSV(file);
-    else if (ext === 'las') data = await parseLAS(file);
-    else if (ext === 'xlsx' || ext === 'xls') data = await parseExcel(file);
-    else { toast('Unsupported file format', 'error'); return; }
-    S[type].raw = data.rows;
-    S[type].headers = data.headers;
-    showPreview(type, data);
-    document.getElementById(type + 'Zone').classList.add('loaded');
-    document.getElementById(type + 'Zone').querySelector('p').textContent = file.name;
-    toast(type.charAt(0).toUpperCase()+type.slice(1)+' file loaded: '+file.name, 'success');
-  } catch(e) {
-    toast('Error parsing file: '+e.message, 'error');
-    console.error(e);
-  }
-}
-
-function parseCSV(file) {
-  return new Promise((resolve, reject) => {
-    Papa.parse(file, {
-      complete: r => {
-        const rows = r.data.filter(row => row.some(c => c !== ''));
-        if (rows.length < 2) { reject(new Error('File has insufficient data')); return; }
-        resolve({ headers: rows[0].map(h => h.trim()), rows: rows.slice(1) });
-      },
-      error: e => reject(e),
-      skipEmptyLines: true
-    });
-  });
-}
-
-function parseLAS(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const text = e.target.result;
-      const lines = text.split(/\r?\n/);
-      let section = '', curves = [], dataRows = [];
-      for (let line of lines) {
-        const t = line.trim();
-        if (!t || t.startsWith('#')) continue;
-        if (t.startsWith('~')) { section = t.substring(0,2).toUpperCase(); continue; }
-        if (section === '~C') {
-          const ci = t.indexOf(':');
-          const spec = ci >= 0 ? t.substring(0, ci).trim() : t;
-          const di = spec.indexOf('.');
-          const name = (di >= 0 ? spec.substring(0, di) : spec).split(/\s+/)[0].trim();
-          const unit = di >= 0 ? spec.substring(di+1).trim().split(/\s+/)[0] : '';
-          curves.push({ name, unit });
-        } else if (section === '~A') {
-          const vals = t.split(/\s+/).map(Number);
-          if (vals.length >= curves.length && vals.every(v => !isNaN(v))) dataRows.push(vals);
-        }
-      }
-      if (curves.length === 0) { reject(new Error('No curves found in LAS file')); return; }
-      const headers = curves.map(c => c.name + (c.unit ? '('+c.unit+')' : ''));
-      const rows = dataRows.map(r => r.map(v => String(v)));
-      resolve({ headers, rows });
-    };
-    reader.onerror = () => reject(new Error('Failed to read LAS file'));
-    reader.readAsText(file);
-  });
-}
-
-function parseExcel(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      try {
-        const wb = XLSX.read(e.target.result, { type: 'array' });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-        const rows = raw.filter(r => r.some(c => c !== ''));
-        if (rows.length < 2) { reject(new Error('File has insufficient data')); return; }
-        resolve({ headers: rows[0].map(h => String(h).trim()), rows: rows.slice(1).map(r => r.map(c => String(c))) });
-      } catch(err) { reject(err); }
-    };
-    reader.onerror = () => reject(new Error('Failed to read Excel file'));
-    reader.readAsArrayBuffer(file);
-  });
-}
-
-/* ===== PREVIEW & COLUMN MAPPING ===== */
-function showPreview(type, data) {
-  const container = document.getElementById(type + 'Preview');
-  const tableDiv = document.getElementById(type + 'PreviewTable');
-  container.style.display = 'block';
-  // Build preview table (first 10 rows)
-  let html = '<table><thead><tr>';
-  data.headers.forEach(h => html += '<th>' + esc(h) + '</th>');
-  html += '</tr></thead><tbody>';
-  data.rows.slice(0, 10).forEach(row => {
-    html += '<tr>';
-    row.forEach(c => html += '<td class="mono">' + esc(c) + '</td>');
-    html += '</tr>';
-  });
-  html += '</tbody></table>';
-  tableDiv.innerHTML = html;
-  // Populate dropdowns
-  ['MD','Inc','Azi'].forEach(param => {
-    const sel = document.getElementById(type + param);
-    sel.innerHTML = '<option value="-1">-- Select --</option>';
-    data.headers.forEach((h, i) => {
-      sel.innerHTML += '<option value="'+i+'">' + esc(h) + '</option>';
-    });
-    // Auto-detect columns by name
-    const lower = data.headers.map(h => h.toLowerCase());
-    let idx = -1;
-    if (param === 'MD') idx = lower.findIndex(h => /md|depth|meas.*depth|dept/i.test(h));
-    else if (param === 'Inc') idx = lower.findIndex(h => /inc|incl|inclination|dip/i.test(h));
-    else if (param === 'Azi') idx = lower.findIndex(h => /azi|azim|azimuth|bearing/i.test(h));
-    if (idx >= 0) sel.value = idx;
-  });
-}
-
-function esc(s) { return String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-/* ===== MINIMUM CURVATURE CALCULATION ===== */
-function calcMC(stations) {
-  // stations: [{md, inc, azi}, ...] with inc/azi in degrees
-  // Returns: [{md, inc, azi, tvd, north, east, vs, dls, dogleg, closure, closureAzi}, ...]
-  if (!stations.length) return [];
-  const results = [];
-  let tvd = 0, north = 0, east = 0;
-  const vsRad = S.vsAzimuth * Math.PI / 180;
-
-  for (let i = 0; i < stations.length; i++) {
-    const inc1 = stations[i].inc * Math.PI / 180;
-    const azi1 = stations[i].azi * Math.PI / 180;
-
-    if (i === 0) {
-      // First station - position at origin
-      const vs = 0 * Math.cos(vsRad) + 0 * Math.sin(vsRad);
-      results.push({ md: stations[i].md, inc: stations[i].inc, azi: stations[i].azi, tvd:0, north:0, east:0, vs:0, dls:0, dogleg:0, closure:0, closureAzi:0 });
-      continue;
-    }
-
-    const inc0 = stations[i-1].inc * Math.PI / 180;
-    const azi0 = stations[i-1].azi * Math.PI / 180;
-    const dmd = stations[i].md - stations[i-1].md;
-    if (dmd <= 0) { results.push({...results[results.length-1], md: stations[i].md, inc: stations[i].inc, azi: stations[i].azi}); continue; }
-
-    // Dogleg angle
-    let cosDL = Math.cos(inc1 - inc0) - Math.sin(inc0) * Math.sin(inc1) * (1 - Math.cos(azi1 - azi0));
-    cosDL = Math.max(-1, Math.min(1, cosDL));
-    const dogleg = Math.acos(cosDL);
-
-    // Ratio factor
-    let rf = 1;
-    if (dogleg > 1e-8) rf = (2 / dogleg) * Math.tan(dogleg / 2);
-
-    const dtvd = (dmd / 2) * (Math.cos(inc0) + Math.cos(inc1)) * rf;
-    const dn = (dmd / 2) * (Math.sin(inc0) * Math.cos(azi0) + Math.sin(inc1) * Math.cos(azi1)) * rf;
-    const de = (dmd / 2) * (Math.sin(inc0) * Math.sin(azi0) + Math.sin(inc1) * Math.sin(azi1)) * rf;
-
-    tvd += dtvd;
-    north += dn;
-    east += de;
-
-    const vs = north * Math.cos(vsRad) + east * Math.sin(vsRad);
-    const closure = Math.sqrt(north * north + east * east);
-    let closureAzi = Math.atan2(east, north) * 180 / Math.PI;
-    if (closureAzi < 0) closureAzi += 360;
-    const dls = dogleg > 1e-8 ? (dogleg * 180 / Math.PI) / dmd * 30 : 0;
-
-    results.push({ md: stations[i].md, inc: stations[i].inc, azi: stations[i].azi, tvd, north, east, vs, dls, dogleg: dogleg * 180 / Math.PI, closure, closureAzi });
-  }
-  return results;
-}
-
-/* ===== INTERPOLATION ===== */
-function interpAtMD(results, targetMD) {
-  if (!results.length) return null;
-  if (results.length === 1) {
-    const r = results[0];
-    return { md: targetMD, inc: r.inc, azi: r.azi, tvd: r.tvd, north: r.north, east: r.east, vs: r.vs, dls: r.dls, closure: r.closure, closureAzi: r.closureAzi };
-  }
-
-  // Before first - extrapolate
-  if (targetMD < results[0].md) {
-    const frac = (results[1].md - results[0].md) > 0 ? (targetMD - results[0].md) / (results[1].md - results[0].md) : 0;
-    const inc = results[0].inc + frac * (results[1].inc - results[0].inc);
-    const azi = results[0].azi + frac * (results[1].azi - results[0].azi);
-    // Use MC from station 0 to target
-    const mc = calcMCSegment(results[0], { md: targetMD, inc, azi });
-    return { md: targetMD, inc, azi, tvd: results[0].tvd + mc.dtvd, north: results[0].north + mc.dn, east: results[0].east + mc.de, vs: 0, dls: mc.dls, closure: 0, closureAzi: 0 };
-  }
-
-  // After last - extrapolate
-  if (targetMD > results[results.length-1].md) {
-    const n = results.length;
-    const frac = (results[n-1].md - results[n-2].md) > 0 ? (targetMD - results[n-1].md) / (results[n-1].md - results[n-2].md) : 0;
-    const inc = results[n-1].inc + frac * (results[n-1].inc - results[n-2].inc);
-    const azi = results[n-1].azi + frac * (results[n-1].azi - results[n-2].azi);
-    const mc = calcMCSegment(results[n-1], { md: targetMD, inc, azi });
-    const nE = results[n-1].north + mc.dn, eE = results[n-1].east + mc.de;
-    const vsRad = S.vsAzimuth * Math.PI / 180;
-    return { md: targetMD, inc, azi, tvd: results[n-1].tvd + mc.dtvd, north: nE, east: eE, vs: nE*Math.cos(vsRad)+eE*Math.sin(vsRad), dls: mc.dls, closure: Math.sqrt(nE*nE+eE*eE), closureAzi: 0 };
-  }
-
-  // Within range - use MC for the segment
-  for (let i = 0; i < results.length - 1; i++) {
-    if (targetMD >= results[i].md && targetMD <= results[i+1].md) {
-      const dmd = results[i+1].md - results[i].md;
-      if (dmd < 1e-10) continue;
-      const frac = (targetMD - results[i].md) / dmd;
-      const inc = results[i].inc + frac * (results[i+1].inc - results[i].inc);
-      const azi = results[i].azi + frac * (results[i+1].azi - results[i].azi);
-      const mc = calcMCSegment(results[i], { md: targetMD, inc, azi });
-      const nE = results[i].north + mc.dn, eE = results[i].east + mc.de;
-      const vsRad = S.vsAzimuth * Math.PI / 180;
-      return { md: targetMD, inc, azi, tvd: results[i].tvd + mc.dtvd, north: nE, east: eE, vs: nE*Math.cos(vsRad)+eE*Math.sin(vsRad), dls: mc.dls, closure: Math.sqrt(nE*nE+eE*eE), closureAzi: 0 };
-    }
-  }
-  return null;
-}
-
-function calcMCSegment(r1, s2) {
-  const inc0 = r1.inc * Math.PI / 180;
-  const azi0 = r1.azi * Math.PI / 180;
-  const inc1 = s2.inc * Math.PI / 180;
-  const azi1 = s2.azi * Math.PI / 180;
-  const dmd = s2.md - r1.md;
-  if (dmd <= 0) return { dtvd:0, dn:0, de:0, dls:0 };
-
-  let cosDL = Math.cos(inc1 - inc0) - Math.sin(inc0) * Math.sin(inc1) * (1 - Math.cos(azi1 - azi0));
-  cosDL = Math.max(-1, Math.min(1, cosDL));
-  const dogleg = Math.acos(cosDL);
-  let rf = 1;
-  if (dogleg > 1e-8) rf = (2 / dogleg) * Math.tan(dogleg / 2);
-
-  return {
-    dtvd: (dmd/2)*(Math.cos(inc0)+Math.cos(inc1))*rf,
-    dn: (dmd/2)*(Math.sin(inc0)*Math.cos(azi0)+Math.sin(inc1)*Math.cos(azi1))*rf,
-    de: (dmd/2)*(Math.sin(inc0)*Math.sin(azi0)+Math.sin(inc1)*Math.sin(azi1))*rf,
-    dls: dogleg > 1e-8 ? (dogleg*180/Math.PI)/dmd*30 : 0
-  };
-}
-
-function interpAtTVD(results, targetTVD) {
-  if (!results.length) return null;
-  if (results.length < 2) return null;
-  // Find segment where TVD crosses target
-  for (let i = 0; i < results.length - 1; i++) {
-    const t1 = results[i].tvd, t2 = results[i+1].tvd;
-    if ((targetTVD >= t1 && targetTVD <= t2) || (targetTVD <= t1 && targetTVD >= t2)) {
-      if (Math.abs(t2 - t1) < 1e-10) continue;
-      const frac = (targetTVD - t1) / (t2 - t1);
-      const md = results[i].md + frac * (results[i+1].md - results[i].md);
-      return interpAtMD(results, md);
-    }
-  }
-  // Extrapolate
-  if (targetTVD < results[0].tvd) {
-    const frac = Math.abs(results[1].tvd - results[0].tvd) > 1e-10 ? (targetTVD - results[0].tvd) / (results[1].tvd - results[0].tvd) : 0;
-    const md = results[0].md + frac * (results[1].md - results[0].md);
-    return interpAtMD(results, md);
-  }
-  const n = results.length;
-  const frac = Math.abs(results[n-1].tvd - results[n-2].tvd) > 1e-10 ? (targetTVD - results[n-1].tvd) / (results[n-1].tvd - results[n-2].tvd) : 0;
-  const md = results[n-1].md + frac * (results[n-1].md - results[n-2].md);
-  return interpAtMD(results, md);
-}
-
-function interpAtVS(results, targetVS) {
-  if (!results.length) return null;
-  if (results.length < 2) return null;
-  for (let i = 0; i < results.length - 1; i++) {
-    const v1 = results[i].vs, v2 = results[i+1].vs;
-    if ((targetVS >= v1 && targetVS <= v2) || (targetVS <= v1 && targetVS >= v2)) {
-      if (Math.abs(v2 - v1) < 1e-10) continue;
-      const frac = (targetVS - v1) / (v2 - v1);
-      const md = results[i].md + frac * (results[i+1].md - results[i].md);
-      return interpAtMD(results, md);
-    }
-  }
-  // Extrapolate
-  if (targetVS < results[0].vs && Math.abs(results[1].vs - results[0].vs) > 1e-10) {
-    const frac = (targetVS - results[0].vs) / (results[1].vs - results[0].vs);
-    return interpAtMD(results, results[0].md + frac * (results[1].md - results[0].md));
-  }
-  const n = results.length;
-  if (Math.abs(results[n-1].vs - results[n-2].vs) > 1e-10) {
-    const frac = (targetVS - results[n-1].vs) / (results[n-1].vs - results[n-2].vs);
-    return interpAtMD(results, results[n-1].md + frac * (results[n-1].md - results[n-2].md));
-  }
-  return null;
-}
-
-/* ===== PROCESS DATA ===== */
-function processData() {
-  // Extract stations from mapped columns
-  ['plan','survey'].forEach(type => {
-    const mdCol = parseInt(document.getElementById(type+'MD').value);
-    const incCol = parseInt(document.getElementById(type+'Inc').value);
-    const aziCol = parseInt(document.getElementById(type+'Azi').value);
-    if (S[type].raw.length > 0) {
-      if (mdCol < 0 || incCol < 0 || aziCol < 0) {
-        toast('Please map all columns for '+type+' file', 'error');
-        return;
-      }
-      const stations = [];
-      S[type].raw.forEach(row => {
-        const md = parseFloat(row[mdCol]);
-        const inc = parseFloat(row[incCol]);
-        const azi = parseFloat(row[aziCol]);
-        if (!isNaN(md) && !isNaN(inc) && !isNaN(azi) && md >= 0) {
-          stations.push({ md, inc, azi });
-        }
-      });
-      stations.sort((a,b) => a.md - b.md);
-      // Remove duplicates
-      const unique = [stations[0]];
-      for (let i = 1; i < stations.length; i++) {
-        if (Math.abs(stations[i].md - unique[unique.length-1].md) > 0.001) unique.push(stations[i]);
-      }
-      S[type].stations = unique;
-    }
-  });
-
-  S.vsAzimuth = parseFloat(document.getElementById('vsAzimuth').value) || 0;
-
-  // Calculate MC
-  if (S.plan.stations.length >= 2) S.plan.results = calcMC(S.plan.stations);
-  if (S.survey.stations.length >= 2) S.survey.results = calcMC(S.survey.stations);
-
-  if (S.plan.results.length === 0 && S.survey.results.length === 0) {
-    toast('No valid data to process. Upload and map files first.', 'error');
-    return;
-  }
-
-  // Calculate comparison
-  calculateComparison();
-  // Render data tables
-  renderDataTables();
-  // Render comparison
-  renderComparison();
-  // Draw canvases
-  setTimeout(() => { drawPlanView(); drawVS(); }, 200);
-  // Update status
-  const pCount = S.plan.results.length, sCount = S.survey.results.length;
-  document.getElementById('statusBadge').innerHTML = '<i class="fas fa-check-circle" style="margin-right:4px"></i>Plan: '+pCount+' | Survey: '+sCount;
-  document.getElementById('statusBadge').className = 'badge badge-plan';
-  toast('Data processed successfully. Plan: '+pCount+' stations, Survey: '+sCount+' stations', 'success');
-}
-
-/* ===== COMPARISON ===== */
-function calculateComparison() {
-  S.comparison = [];
-  if (!S.survey.results.length || !S.plan.results.length) return;
-
-  S.survey.results.forEach(sv => {
-    const pl = interpAtMD(S.plan.results, sv.md);
-    if (!pl) return;
-
-    const dTVD = sv.tvd - pl.tvd;
-    const dN = sv.north - pl.north;
-    const dE = sv.east - pl.east;
-    const planAziRad = pl.azi * Math.PI / 180;
-
-    const fb = dN * Math.cos(planAziRad) + dE * Math.sin(planAziRad);
-    const lr = -dN * Math.sin(planAziRad) + dE * Math.cos(planAziRad);
-    const cc = Math.sqrt(dTVD * dTVD + dN * dN + dE * dE);
-
-    S.comparison.push({
-      md: sv.md,
-      planTVD: pl.tvd, surveyTVD: sv.tvd,
-      planN: pl.north, surveyN: sv.north,
-      planE: pl.east, surveyE: sv.east,
-      planVS: pl.vs, surveyVS: sv.vs,
-      planInc: pl.inc, surveyInc: sv.inc,
-      planAzi: pl.azi, surveyAzi: sv.azi,
-      surveyDLS: sv.dls,
-      aboveBelow: -dTVD, // positive = above plan (shallower)
-      leftRight: lr,      // positive = right of plan
-      frontBehind: fb,    // positive = ahead of plan
-      cc: cc
-    });
-  });
-}
-
-/* ===== RENDER DATA TABLES ===== */
-function renderDataTables() {
-  ['plan','survey'].forEach(type => {
-    const div = document.getElementById(type + 'DataTable');
-    const count = document.getElementById(type + 'Count');
-    const r = S[type].results;
-    count.textContent = '(' + r.length + ' stations)';
-    if (!r.length) { div.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:20px">No data</p>'; return; }
-    let html = '<table><thead><tr><th>MD</th><th>Inc</th><th>Azi</th><th>TVD</th><th>N</th><th>E</th><th>VS</th><th>DLS</th><th>Closure</th></tr></thead><tbody>';
-    r.forEach(r => {
-      html += '<tr><td class="mono">' + r.md.toFixed(2) + '</td><td class="mono">' + r.inc.toFixed(2) + '</td><td class="mono">' + r.azi.toFixed(2) + '</td><td class="mono">' + r.tvd.toFixed(2) + '</td><td class="mono">' + r.north.toFixed(2) + '</td><td class="mono">' + r.east.toFixed(2) + '</td><td class="mono">' + r.vs.toFixed(2) + '</td><td class="mono">' + r.dls.toFixed(2) + '</td><td class="mono">' + r.closure.toFixed(2) + '</td></tr>';
-    });
-    html += '</tbody></table>';
-    div.innerHTML = html;
-  });
-}
-
-/* ===== RENDER COMPARISON ===== */
-function renderComparison() {
-  // Summary cards
-  const cards = document.getElementById('summaryCards');
-  if (S.comparison.length === 0) { cards.innerHTML = ''; return; }
-  const maxCC = Math.max(...S.comparison.map(c => c.cc));
-  const avgCC = S.comparison.reduce((s,c) => s + c.cc, 0) / S.comparison.length;
-  const maxAB = Math.max(...S.comparison.map(c => Math.abs(c.aboveBelow)));
-  const maxLR = Math.max(...S.comparison.map(c => Math.abs(c.leftRight)));
-  const maxFB = Math.max(...S.comparison.map(c => Math.abs(c.frontBehind)));
-  const endCC = S.comparison[S.comparison.length-1].cc;
-
-  cards.innerHTML = [
-    { val: maxCC.toFixed(2), label: 'Max C-C (m)', color: 'var(--danger)' },
-    { val: avgCC.toFixed(2), label: 'Avg C-C (m)', color: 'var(--accent)' },
-    { val: endCC.toFixed(2), label: 'End C-C (m)', color: 'var(--survey)' },
-    { val: maxAB.toFixed(2), label: 'Max A/B (m)', color: 'var(--plan)' },
-    { val: maxLR.toFixed(2), label: 'Max L/R (m)', color: 'var(--success)' },
-    { val: maxFB.toFixed(2), label: 'Max F/B (m)', color: 'var(--info)' }
-  ].map(c => '<div class="card stat-card"><div class="stat-val" style="color:'+c.color+'">'+c.val+'</div><div class="stat-label">'+c.label+'</div></div>').join('');
-
-  // Comparison table
-  const div = document.getElementById('comparisonTable');
-  let html = '<table><thead><tr><th>MD</th><th>Plan TVD</th><th>Svy TVD</th><th>A/B</th><th>L/R</th><th>F/B</th><th>C-C</th><th>Pl Inc</th><th>Sv Inc</th><th>Svy DLS</th></tr></thead><tbody>';
-  S.comparison.forEach(c => {
-    html += '<tr>'
-      + '<td class="mono">' + c.md.toFixed(1) + '</td>'
-      + '<td class="mono">' + c.planTVD.toFixed(2) + '</td>'
-      + '<td class="mono">' + c.surveyTVD.toFixed(2) + '</td>'
-      + '<td class="mono">' + fmtDir(c.aboveBelow, 'Above', 'Below') + '</td>'
-      + '<td class="mono">' + fmtDir(c.leftRight, 'Right', 'Left') + '</td>'
-      + '<td class="mono">' + fmtDir(c.frontBehind, 'Ahead', 'Behind') + '</td>'
-      + '<td class="mono">' + c.cc.toFixed(2) + ' C-C</td>'
-      + '<td class="mono">' + c.planInc.toFixed(1) + '</td>'
-      + '<td class="mono">' + c.surveyInc.toFixed(1) + '</td>'
-      + '<td class="mono">' + c.surveyDLS.toFixed(2) + '</td>'
-      + '</tr>';
-  });
-  html += '</tbody></table>';
-  div.innerHTML = html;
-}
-
-/* Format a signed displacement with a direction label (no color, no sign) */
-function fmtDir(val, posLabel, negLabel) {
-  if (Math.abs(val) < 0.005) return '0.00';
-  const mag = Math.abs(val).toFixed(2);
-  return mag + ' ' + (val > 0 ? posLabel : negLabel);
-}
-
-/* ===== PDF REPORT EXPORT ===== */
-function exportPDFReport() {
-  if (!S.comparison.length) { toast('Process plan and survey data first', 'error'); return; }
-  if (typeof window.jspdf === 'undefined') { toast('PDF library failed to load (check internet connection)', 'error'); return; }
-
-  toast('Generating PDF report...', 'info');
-
-  // Force a redraw so the exported canvases match the current state
-  drawPlanView();
-  drawVS();
-
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const pageW = doc.internal.pageSize.getWidth();   // 210
-  const pageH = doc.internal.pageSize.getHeight();  // 297
-  const margin = 14;
-  const colW = pageW - 2 * margin;
-
-  /* ---- Title / header ---- */
-  doc.setFillColor(232, 160, 0);
-  doc.rect(0, 0, pageW, 14, 'F');
-  doc.setTextColor(10, 15, 30);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.text('WellPath Analyst — Comparison Report', margin, 9);
-
-  doc.setTextColor(40, 40, 40);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.text('Generated: ' + new Date().toLocaleString(), margin, 20);
-  doc.text('VS Reference Azimuth: ' + S.vsAzimuth.toFixed(2) + '°', margin, 25);
-  doc.text('Plan stations: ' + S.plan.results.length + '   |   Survey stations: ' + S.survey.results.length, margin, 30);
-
-  /* ---- Summary statistics ---- */
-  const maxCC  = Math.max(...S.comparison.map(c => c.cc));
-  const avgCC  = S.comparison.reduce((s,c) => s + c.cc, 0) / S.comparison.length;
-  const endCC  = S.comparison[S.comparison.length - 1].cc;
-  const maxAB  = Math.max(...S.comparison.map(c => Math.abs(c.aboveBelow)));
-  const maxLR  = Math.max(...S.comparison.map(c => Math.abs(c.leftRight)));
-  const maxFB  = Math.max(...S.comparison.map(c => Math.abs(c.frontBehind)));
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text('Summary Statistics', margin, 40);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-
-  const stats = [
-    ['Max C-C (m)',  maxCC.toFixed(2)],
-    ['Avg C-C (m)',  avgCC.toFixed(2)],
-    ['End C-C (m)',  endCC.toFixed(2)],
-    ['Max A/B (m)',  maxAB.toFixed(2)],
-    ['Max L/R (m)',  maxLR.toFixed(2)],
-    ['Max F/B (m)',  maxFB.toFixed(2)]
-  ];
-  // 3 columns x 2 rows grid
-  const cellW = colW / 3;
-  stats.forEach((s, i) => {
-    const col = i % 3, row = Math.floor(i / 3);
-    const x = margin + col * cellW;
-    const y = 45 + row * 14;
-    doc.setDrawColor(200);
-    doc.setFillColor(245, 245, 245);
-    doc.roundedRect(x, y, cellW - 2, 12, 2, 2, 'FD');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(20);
-    doc.text(s[1], x + 3, y + 6);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(100);
-    doc.text(s[0], x + 3, y + 10);
-  });
-
-  /* ---- Plan View plot ---- */
-  let yPos = 80;
-  doc.setTextColor(20);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text('Plan View (North vs East)', margin, yPos);
-  yPos += 3;
-  try {
-    const planImg = document.getElementById('planViewCanvas').toDataURL('image/png');
-    const imgW = colW;
-    const imgH = imgW * (500 / 600); // canvas is 600x500
-    doc.addImage(planImg, 'PNG', margin, yPos, imgW, imgH);
-    yPos += imgH + 6;
-  } catch(e) { console.error('Plan view image error', e); }
-
-  /* ---- VS plot ---- */
-  // If there's not enough room for the VS plot, start a new page
-  if (yPos + 90 > pageH - 20) { doc.addPage(); yPos = margin; }
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text('Vertical Section (VS vs TVD)', margin, yPos);
-  yPos += 3;
-  try {
-    const vsImg = document.getElementById('vsCanvas').toDataURL('image/png');
-    const imgW = colW;
-    const imgH = imgW * (500 / 600);
-    doc.addImage(vsImg, 'PNG', margin, yPos, imgW, imgH);
-    yPos += imgH + 8;
-  } catch(e) { console.error('VS image error', e); }
-
-  /* ---- Comparison table (always on a new page for clarity) ---- */
-  doc.addPage();
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.text('Survey vs Plan — Station-by-Station Comparison', margin, 15);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(100);
-  doc.text('Direction labels: Above/Below (A/B), Right/Left (L/R), Ahead/Behind (F/B), C-C = 3D centre-to-centre', margin, 20);
-  doc.setTextColor(20);
-
-  const tableBody = S.comparison.map(c => [
-    c.md.toFixed(1),
-    c.planTVD.toFixed(2),
-    c.surveyTVD.toFixed(2),
-    fmtDir(c.aboveBelow, 'Above', 'Below'),
-    fmtDir(c.leftRight, 'Right', 'Left'),
-    fmtDir(c.frontBehind, 'Ahead', 'Behind'),
-    c.cc.toFixed(2) + ' C-C',
-    c.planInc.toFixed(1),
-    c.surveyInc.toFixed(1),
-    c.surveyDLS.toFixed(2)
-  ]);
-
-  doc.autoTable({
-    startY: 24,
-    head: [['MD (m)', 'Plan TVD', 'Svy TVD', 'A/B', 'L/R', 'F/B', 'C-C', 'Pl Inc', 'Sv Inc', 'DLS']],
-    body: tableBody,
-    styles:     { fontSize: 7, cellPadding: 1.5, textColor: [30, 30, 30] },
-    headStyles: { fillColor: [232, 160, 0], textColor: [10, 15, 30], fontStyle: 'bold', fontSize: 7 },
-    alternateRowStyles: { fillColor: [248, 248, 248] },
-    margin: { left: margin, right: margin },
-    didDrawPage: function(data) {
-      // Page footer
-      const pc = doc.internal.getNumberOfPages();
-      const cp = data.pageNumber;
-      doc.setFontSize(8);
-      doc.setTextColor(120);
-      doc.text('WellPath Analyst  |  © ' + new Date().getFullYear() + ' Ismail Harkat  |  MIT License',
-               margin, pageH - 8);
-      doc.text('Page ' + cp, pageW - margin, pageH - 8, { align: 'right' });
-    }
-  });
-
-  /* ---- Write footer on the first page(s) that didn't pass through autoTable ---- */
-  const totalPages = doc.internal.getNumberOfPages();
-  for (let p = 1; p <= totalPages; p++) {
-    doc.setPage(p);
-    // Re-draw footer on any page that has no text at the bottom yet
-    doc.setFontSize(8);
-    doc.setTextColor(120);
-    doc.text('WellPath Analyst  |  © ' + new Date().getFullYear() + ' Ismail Harkat  |  MIT License',
-             margin, pageH - 8);
-    doc.text('Page ' + p + ' of ' + totalPages, pageW - margin, pageH - 8, { align: 'right' });
-  }
-
-  const fname = 'WellPath_Report_' + new Date().toISOString().slice(0, 10) + '.pdf';
-  doc.save(fname);
-  toast('PDF report saved: ' + fname, 'success');
-}
-
-/* ===== CANVAS DRAWING ===== */
-function drawPlanView() {
-  const canvas = document.getElementById('planViewCanvas');
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-  ctx.clearRect(0,0,W,H);
-
-  // Background
-  ctx.fillStyle = '#0d1526';
-  ctx.fillRect(0,0,W,H);
-
-  const pad = 60;
-  const allN = [...S.plan.results.map(r=>r.north), ...S.survey.results.map(r=>r.north), 0];
-  const allE = [...S.plan.results.map(r=>r.east), ...S.survey.results.map(r=>r.east), 0];
-  if (allN.length < 3) return;
-
-  let minN = Math.min(...allN), maxN = Math.max(...allN);
-  let minE = Math.min(...allE), maxE = Math.max(...allE);
-  const rangeN = Math.max(maxN - minN, 10), rangeE = Math.max(maxE - minE, 10);
-  // Make aspect ratio roughly 1:1 by using the larger range
-  const maxRange = Math.max(rangeN, rangeE);
-  const cnN = (minN + maxN) / 2, cnE = (minE + maxE) / 2;
-  minN = cnN - maxRange/2; maxN = cnN + maxRange/2;
-  minE = cnE - maxRange/2; maxE = cnE + maxRange/2;
-
-  const dW = W - 2*pad, dH = H - 2*pad;
-  function tx(e) { return pad + (e - minE) / (maxE - minE) * dW; }
-  function ty(n) { return H - pad - (n - minN) / (maxN - minN) * dH; }
-
-  // Grid
-  ctx.strokeStyle = '#1a2540';
-  ctx.lineWidth = 1;
-  const step = niceStep(maxRange, 6);
-  for (let v = Math.floor(minN/step)*step; v <= maxN; v += step) {
-    ctx.beginPath(); ctx.moveTo(pad, ty(v)); ctx.lineTo(W-pad, ty(v)); ctx.stroke();
-  }
-  for (let v = Math.floor(minE/step)*step; v <= maxE; v += step) {
-    ctx.beginPath(); ctx.moveTo(tx(v), pad); ctx.lineTo(tx(v), H-pad); ctx.stroke();
-  }
-
-  // Axis labels
-  ctx.fillStyle = '#6b7fa0';
-  ctx.font = '10px JetBrains Mono';
-  ctx.textAlign = 'center';
-  for (let v = Math.floor(minE/step)*step; v <= maxE; v += step) {
-    ctx.fillText(v.toFixed(0), tx(v), H-pad+14);
-  }
-  ctx.textAlign = 'right';
-  for (let v = Math.floor(minN/step)*step; v <= maxN; v += step) {
-    ctx.fillText(v.toFixed(0), pad-6, ty(v)+3);
-  }
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#4ea8ff';
-  ctx.fillText('East (m)', W/2, H-8);
-  ctx.save(); ctx.translate(12, H/2); ctx.rotate(-Math.PI/2); ctx.fillStyle = '#10d4a0'; ctx.fillText('North (m)', 0, 0); ctx.restore();
-
-  // Draw plan path
-  if (S.plan.results.length > 1) {
-    ctx.beginPath();
-    ctx.strokeStyle = '#3e9fff';
-    ctx.lineWidth = 2;
-    S.plan.results.forEach((r, i) => { i === 0 ? ctx.moveTo(tx(r.east), ty(r.north)) : ctx.lineTo(tx(r.east), ty(r.north)); });
-    ctx.stroke();
-    S.plan.results.forEach(r => { ctx.beginPath(); ctx.arc(tx(r.east), ty(r.north), 3, 0, Math.PI*2); ctx.fillStyle='#3e9fff'; ctx.fill(); });
-  }
-
-  // Draw survey path
-  if (S.survey.results.length > 1) {
-    ctx.beginPath();
-    ctx.strokeStyle = '#e8a000';
-    ctx.lineWidth = 2;
-    S.survey.results.forEach((r, i) => { i === 0 ? ctx.moveTo(tx(r.east), ty(r.north)) : ctx.lineTo(tx(r.east), ty(r.north)); });
-    ctx.stroke();
-    S.survey.results.forEach(r => { ctx.beginPath(); ctx.arc(tx(r.east), ty(r.north), 3, 0, Math.PI*2); ctx.fillStyle='#e8a000'; ctx.fill(); });
-  }
-
-  // Legend
-  ctx.font = '11px DM Sans';
-  ctx.fillStyle = '#3e9fff'; ctx.fillRect(W-140, 16, 14, 3); ctx.fillText('Plan', W-120, 20);
-  ctx.fillStyle = '#e8a000'; ctx.fillRect(W-140, 30, 14, 3); ctx.fillText('Survey', W-120, 34);
-}
-
-function drawVS() {
-  const canvas = document.getElementById('vsCanvas');
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-  ctx.clearRect(0,0,W,H);
-  ctx.fillStyle = '#0d1526';
-  ctx.fillRect(0,0,W,H);
-
-  const pad = 60;
-  const allTVD = [...S.plan.results.map(r=>r.tvd), ...S.survey.results.map(r=>r.tvd), 0];
-  const allVS = [...S.plan.results.map(r=>r.vs), ...S.survey.results.map(r=>r.vs), 0];
-  if (allTVD.length < 3) return;
-
-  let minTVD = Math.min(...allTVD), maxTVD = Math.max(...allTVD);
-  let minVS = Math.min(...allVS, 0), maxVS = Math.max(...allVS);
-  const rangeTVD = Math.max(maxTVD - minTVD, 10), rangeVS = Math.max(maxVS - minVS, 10);
-
-  const dW = W - 2*pad, dH = H - 2*pad;
-  function tx(vs) { return pad + (vs - minVS) / rangeVS * dW; }
-  function ty(tvd) { return pad + (tvd - minTVD) / rangeTVD * dH; } // TVD increases downward
-
-  // Grid
-  ctx.strokeStyle = '#1a2540';
-  ctx.lineWidth = 1;
-  const stepTVD = niceStep(rangeTVD, 6);
-  const stepVS = niceStep(rangeVS, 6);
-  for (let v = Math.floor(minTVD/stepTVD)*stepTVD; v <= maxTVD; v += stepTVD) {
-    ctx.beginPath(); ctx.moveTo(pad, ty(v)); ctx.lineTo(W-pad, ty(v)); ctx.stroke();
-  }
-  for (let v = Math.floor(minVS/stepVS)*stepVS; v <= maxVS; v += stepVS) {
-    ctx.beginPath(); ctx.moveTo(tx(v), pad); ctx.lineTo(tx(v), H-pad); ctx.stroke();
-  }
-
-  // Axis labels
-  ctx.fillStyle = '#6b7fa0';
-  ctx.font = '10px JetBrains Mono';
-  ctx.textAlign = 'center';
-  for (let v = Math.floor(minVS/stepVS)*stepVS; v <= maxVS; v += stepVS) {
-    ctx.fillText(v.toFixed(0), tx(v), H-pad+14);
-  }
-  ctx.textAlign = 'right';
-  for (let v = Math.floor(minTVD/stepTVD)*stepTVD; v <= maxTVD; v += stepTVD) {
-    ctx.fillText(v.toFixed(0), pad-6, ty(v)+3);
-  }
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#4ea8ff';
-  ctx.fillText('VS (m)', W/2, H-8);
-  ctx.save(); ctx.translate(12, H/2); ctx.rotate(-Math.PI/2); ctx.fillStyle = '#10d4a0'; ctx.fillText('TVD (m)', 0, 0); ctx.restore();
-
-  // Formation tops
-  S.formations.forEach(fm => {
-    if (fm.tvd >= minTVD && fm.tvd <= maxTVD) {
-      ctx.strokeStyle = '#f0444488';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4,4]);
-      ctx.beginPath(); ctx.moveTo(pad, ty(fm.tvd)); ctx.lineTo(W-pad, ty(fm.tvd)); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = '#f04444';
-      ctx.font = '10px DM Sans';
-      ctx.textAlign = 'left';
-      ctx.fillText(fm.name, pad+4, ty(fm.tvd)-4);
-    }
-  });
-
-  // Draw plan path
-  if (S.plan.results.length > 1) {
-    ctx.beginPath();
-    ctx.strokeStyle = '#3e9fff';
-    ctx.lineWidth = 2;
-    S.plan.results.forEach((r, i) => { i === 0 ? ctx.moveTo(tx(r.vs), ty(r.tvd)) : ctx.lineTo(tx(r.vs), ty(r.tvd)); });
-    ctx.stroke();
-    S.plan.results.forEach(r => { ctx.beginPath(); ctx.arc(tx(r.vs), ty(r.tvd), 3, 0, Math.PI*2); ctx.fillStyle='#3e9fff'; ctx.fill(); });
-  }
-
-  // Draw survey path
-  if (S.survey.results.length > 1) {
-    ctx.beginPath();
-    ctx.strokeStyle = '#e8a000';
-    ctx.lineWidth = 2;
-    S.survey.results.forEach((r, i) => { i === 0 ? ctx.moveTo(tx(r.vs), ty(r.tvd)) : ctx.lineTo(tx(r.vs), ty(r.tvd)); });
-    ctx.stroke();
-    S.survey.results.forEach(r => { ctx.beginPath(); ctx.arc(tx(r.vs), ty(r.tvd), 3, 0, Math.PI*2); ctx.fillStyle='#e8a000'; ctx.fill(); });
-  }
-
-  // Legend
-  ctx.font = '11px DM Sans';
-  ctx.fillStyle = '#3e9fff'; ctx.fillRect(W-140, 16, 14, 3); ctx.fillText('Plan', W-120, 20);
-  ctx.fillStyle = '#e8a000'; ctx.fillRect(W-140, 30, 14, 3); ctx.fillText('Survey', W-120, 34);
-}
-
-function niceStep(range, maxTicks) {
-  const rough = range / maxTicks;
-  const pow = Math.pow(10, Math.floor(Math.log10(rough)));
-  const frac = rough / pow;
-  let nice;
-  if (frac <= 1.5) nice = 1;
-  else if (frac <= 3) nice = 2;
-  else if (frac <= 7) nice = 5;
-  else nice = 10;
-  return Math.max(nice * pow, 1e-10);
-}
-
-/* ===== QUERY ===== */
-function runQuery() {
-  const type = document.getElementById('queryType').value;
-  const val = parseFloat(document.getElementById('queryValue').value);
-  const source = document.getElementById('querySource').value;
-
-  if (isNaN(val)) { toast('Please enter a numeric value', 'error'); return; }
-
-  let planRes = null, svyRes = null;
-  const label = type.toUpperCase();
-
-  if (source === 'both' || source === 'plan') {
-    if (!S.plan.results.length) toast('No plan data available', 'error');
-    else {
-      if (type === 'md') planRes = interpAtMD(S.plan.results, val);
-      else if (type === 'tvd') planRes = interpAtTVD(S.plan.results, val);
-      else if (type === 'vs') planRes = interpAtVS(S.plan.results, val);
-
-      if (planRes && (type === 'tvd' || type === 'vs')) {
-        // Recalc with MC from the found MD
-        planRes = interpAtMD(S.plan.results, planRes.md);
-      }
-    }
-  }
-
-  if (source === 'both' || source === 'survey') {
-    if (!S.survey.results.length) toast('No survey data available', 'error');
-    else {
-      if (type === 'md') svyRes = interpAtMD(S.survey.results, val);
-      else if (type === 'tvd') svyRes = interpAtTVD(S.survey.results, val);
-      else if (type === 'vs') svyRes = interpAtVS(S.survey.results, val);
-
-      if (svyRes && (type === 'tvd' || type === 'vs')) {
-        svyRes = interpAtMD(S.survey.results, svyRes.md);
-      }
-    }
-  }
-
-  // Render results
-  const div = document.getElementById('queryResults');
-  let html = '';
-
-  if (planRes) {
-    html += '<div class="card"><div class="section-title"><span class="badge badge-plan">PLAN</span> at ' + label + ' = ' + val + '</div>';
-    html += renderQueryResult(planRes);
-    html += '</div>';
-  }
-  if (svyRes) {
-    html += '<div class="card"><div class="section-title"><span class="badge badge-survey">SURVEY</span> at ' + label + ' = ' + val + '</div>';
-    html += renderQueryResult(svyRes);
-    html += '</div>';
-  }
-  if (planRes && svyRes) {
-    const dTVD = svyRes.tvd - planRes.tvd;
-    const dN = svyRes.north - planRes.north;
-    const dE = svyRes.east - planRes.east;
-    const pAziRad = planRes.azi * Math.PI / 180;
-    const fb = dN * Math.cos(pAziRad) + dE * Math.sin(pAziRad);
-    const lr = -dN * Math.sin(pAziRad) + dE * Math.cos(pAziRad);
-    const cc = Math.sqrt(dTVD*dTVD + dN*dN + dE*dE);
-
-    html += '<div class="card" style="border-color:var(--accent)"><div class="section-title"><i class="fas fa-exchange-alt" style="color:var(--accent)"></i> Differences (Survey - Plan)</div>';
-    html += '<div class="query-result">';
-    html += diffCard('Above/Below', -dTVD, 'Above', 'Below');
-    html += diffCard('Left/Right', lr, 'Right', 'Left');
-    html += diffCard('Front/Behind', fb, 'Ahead', 'Behind');
-    html += diffCardAbs('C-C Distance', cc, 'C-C');
-    html += '</div></div>';
-  }
-
-  if (!planRes && !svyRes) {
-    html = '<div class="card" style="text-align:center;color:var(--muted);padding:40px"><i class="fas fa-exclamation-triangle" style="font-size:24px;margin-bottom:12px;display:block;color:var(--accent)"></i>No results found. Ensure data is processed first.</div>';
-  }
-
-  div.innerHTML = html;
-}
-
-function renderQueryResult(r) {
-  const items = [
-    { label: 'MD', val: r.md.toFixed(2), unit: 'm' },
-    { label: 'TVD', val: r.tvd.toFixed(2), unit: 'm' },
-    { label: 'Inc', val: r.inc.toFixed(2), unit: 'deg' },
-    { label: 'Azi', val: r.azi.toFixed(2), unit: 'deg' },
-    { label: 'North', val: r.north.toFixed(2), unit: 'm' },
-    { label: 'East', val: r.east.toFixed(2), unit: 'm' },
-    { label: 'VS', val: r.vs.toFixed(2), unit: 'm' },
-    { label: 'DLS', val: r.dls.toFixed(2), unit: 'deg/30m' },
-    { label: 'Closure', val: r.closure.toFixed(2), unit: 'm' },
-  ];
-  return '<div class="query-result">' + items.map(i =>
-    '<div class="query-item"><div class="q-label">'+i.label+'</div><div class="q-val">'+i.val+' <span style="font-size:10px;color:var(--muted);font-weight:400">'+i.unit+'</span></div></div>'
-  ).join('') + '</div>';
-}
-
-function diffCard(label, val, posLabel, negLabel) {
-  const dirTxt = Math.abs(val) < 0.005 ? '—' : (val > 0 ? posLabel : negLabel);
-  const mag = Math.abs(val).toFixed(2);
-  return '<div class="query-item"><div class="q-label">'+label+'</div><div class="q-val">'+mag+' <span style="font-size:11px;color:var(--muted);font-weight:600">'+dirTxt+'</span> <span style="font-size:10px;color:var(--muted);font-weight:400">m</span></div></div>';
-}
-
-function diffCardAbs(label, val, tag) {
-  return '<div class="query-item"><div class="q-label">'+label+'</div><div class="q-val">'+val.toFixed(2)+' <span style="font-size:11px;color:var(--muted);font-weight:600">'+tag+'</span> <span style="font-size:10px;color:var(--muted);font-weight:400">m</span></div></div>';
-}
-
-/* ===== MANUAL STATION ENTRY ===== */
-function addManualStation() {
-  const target = document.getElementById('addTarget').value;
-  const md = parseFloat(document.getElementById('addMD').value);
-  const inc = parseFloat(document.getElementById('addInc').value);
-  const azi = parseFloat(document.getElementById('addAzi').value);
-
-  if (isNaN(md) || isNaN(inc) || isNaN(azi)) { toast('Please enter valid MD, Inc, and Azi', 'error'); return; }
-  if (md < 0) { toast('MD must be non-negative', 'error'); return; }
-
-  S[target].stations.push({ md, inc, azi });
-  S[target].stations.sort((a,b) => a.md - b.md);
-
-  // Recalculate
-  S[target].results = calcMC(S[target].stations);
-  calculateComparison();
-  renderDataTables();
-  renderComparison();
-  setTimeout(() => { drawPlanView(); drawVS(); }, 100);
-
-  // Clear inputs
-  document.getElementById('addMD').value = '';
-  document.getElementById('addInc').value = '';
-  document.getElementById('addAzi').value = '';
-
-  toast('Station added to ' + target + ' at MD=' + md.toFixed(1) + 'm', 'success');
-}
-
-/* ===== FORMATION TOPS ===== */
-function addFormation() {
-  const name = document.getElementById('fmName').value.trim();
-  const tvd = parseFloat(document.getElementById('fmTVD').value);
-  if (!name) { toast('Please enter a formation name', 'error'); return; }
-  if (isNaN(tvd)) { toast('Please enter a valid TVD', 'error'); return; }
-  S.formations.push({ name, tvd });
-  S.formations.sort((a,b) => a.tvd - b.tvd);
-  renderFormationTops();
-  renderFormationStats();
-  document.getElementById('fmName').value = '';
-  document.getElementById('fmTVD').value = '';
-  toast('Formation top "' + name + '" added at TVD=' + tvd.toFixed(1) + 'm', 'success');
-}
-
-function removeFormation(idx) {
-  S.formations.splice(idx, 1);
-  renderFormationTops();
-  renderFormationStats();
-}
-
-function renderFormationTops() {
-  const div = document.getElementById('formationTopsTable');
-  if (!S.formations.length) { div.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:16px">No formation tops added</p>'; return; }
-  let html = '<table><thead><tr><th>Name</th><th>TVD (m)</th><th>Action</th></tr></thead><tbody>';
-  S.formations.forEach((fm, i) => {
-    html += '<tr><td>' + esc(fm.name) + '</td><td class="mono">' + fm.tvd.toFixed(2) + '</td><td><button class="btn btn-danger btn-sm" onclick="removeFormation('+i+')"><i class="fas fa-trash-alt"></i></button></td></tr>';
-  });
-  html += '</tbody></table>';
-  div.innerHTML = html;
-}
-
-function renderFormationStats() {
-  const div = document.getElementById('formationStatsTable');
-  if (S.formations.length < 1 || (!S.plan.results.length && !S.survey.results.length)) {
-    div.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:16px">Add formation tops and process survey data first</p>';
-    return;
-  }
-
-  let html = '<table style="font-size:11px"><thead><tr><th>Formation</th><th>Top TVD</th><<th>Bot TVD</th><th>Thickness</th><th>MD@Top</th><th>MD@Bot</th><th>DLS Avg</th><th>Incl@Top</th><th>Incl@Bot</th><th>Azi@Top</th><th>Azi@Bot</th></tr></thead><tbody>';
-
-  const source = S.survey.results.length > 0 ? S.survey.results : S.plan.results;
-
-  for (let i = 0; i < S.formations.length; i++) {
-    const fm = S.formations[i];
-    const nextTVD = i < S.formations.length - 1 ? S.formations[i + 1].tvd : null;
-    const thickness = nextTVD !== null ? (nextTVD - fm.tvd).toFixed(2) : '—';
-
-    // Get parameters at formation top TVD
-    const topRes = interpAtTVD(source, fm.tvd);
-    const mdTop = topRes ? topRes.md.toFixed(2) : '—';
-    const incTop = topRes ? topRes.inc.toFixed(2) : '—';
-    const aziTop = topRes ? topRes.azi.toFixed(2) : '—';
-
-    let mdBot = '—', dlsAvg = '—', incBot = '—', aziBot = '—';
-
-    if (nextTVD !== null) {
-      const botRes = interpAtTVD(source, nextTVD);
-      mdBot = botRes ? botRes.md.toFixed(2) : '—';
-      incBot = botRes ? botRes.inc.toFixed(2) : '—';
-      aziBot = botRes ? botRes.azi.toFixed(2) : '—';
-
-      // Average DLS across the formation interval
-      if (topRes && botRes) {
-        const mdRange = botRes.md - topRes.md;
-        if (mdRange > 0) {
-          // Sample DLS across the interval
-          let dlsSum = 0, dlsCount = 0;
-          const steps = Math.min(20, Math.max(2, Math.floor(mdRange / 10)));
-          for (let s = 0; s <= steps; s++) {
-            const sampleMD = topRes.md + (mdRange * s / steps);
-            const sampleRes = interpAtMD(source, sampleMD);
-            if (sampleRes && isFinite(sampleRes.dls)) {
-              dlsSum += sampleRes.dls;
-              dlsCount++;
-            }
-          }
-          dlsAvg = dlsCount > 0 ? (dlsSum / dlsCount).toFixed(2) : '—';
-        }
-      }
-    }
-
-    html += '<tr>';
-    html += '<td style="font-weight:600;color:var(--accent)">' + esc(fm.name) + '</td>';
-    html += '<td class="mono">' + fm.tvd.toFixed(2) + '</td>';
-    html += '<td class="mono">' + (nextTVD !== null ? nextTVD.toFixed(2) : '—') + '</td>';
-    html += '<td class="mono" style="font-weight:600">' + thickness + '</td>';
-    html += '<td class="mono">' + mdTop + '</td>';
-    html += '<td class="mono">' + mdBot + '</td>';
-    html += '<td class="mono">' + dlsAvg + '</td>';
-    html += '<td class="mono">' + incTop + '</td>';
-    html += '<td class="mono">' + incBot + '</td>';
-    html += '<td class="mono">' + aziTop + '</td>';
-    html += '<td class="mono">' + aziBot + '</td>';
-    html += '</tr>';
-  }
-
-  html += '</tbody></table>';
-  div.innerHTML = html;
-}
-
-/* ===== SAMPLE DATA ===== */
-function loadSampleData() {
-  // Sample Plan: S-curve well
-  const planStations = [
-    { md: 0, inc: 0, azi: 45 },
-    { md: 50, inc: 0, azi: 45 },
-    { md: 150, inc: 15, azi: 45 },
-    { md: 300, inc: 30, azi: 45 },
-    { md: 500, inc: 45, azi: 45 },
-    { md: 700, inc: 55, azi: 48 },
-    { md: 900, inc: 60, azi: 50 },
-    { md: 1100, inc: 65, azi: 52 },
-    { md: 1300, inc: 70, azi: 53 },
-    { md: 1500, inc: 72, azi: 55 },
-    { md: 1700, inc: 73, azi: 55 },
-    { md: 1900, inc: 74, azi: 56 },
-    { md: 2100, inc: 75, azi: 57 },
-    { md: 2300, inc: 75, azi: 58 },
-    { md: 2500, inc: 76, azi: 58 },
-  ];
-
-  // Sample Survey: slightly deviated from plan
-  const surveyStations = [
-    { md: 0, inc: 0, azi: 45 },
-    { md: 50, inc: 0.2, azi: 44.8 },
-    { md: 150, inc: 14.5, azi: 45.3 },
-    { md: 300, inc: 29.8, azi: 45.8 },
-    { md: 500, inc: 44.2, azi: 46.5 },
-    { md: 700, inc: 54.8, azi: 49.2 },
-    { md: 900, inc: 60.3, azi: 51.0 },
-    { md: 1100, inc: 65.5, azi: 53.2 },
-    { md: 1300, inc: 70.8, azi: 54.5 },
-    { md: 1500, inc: 72.5, azi: 56.0 },
-    { md: 1700, inc: 73.8, azi: 56.2 },
-    { md: 1900, inc: 74.5, azi: 57.5 },
-    { md: 2100, inc: 75.3, azi: 58.0 },
-    { md: 2300, inc: 75.6, azi: 59.2 },
-    { md: 2500, inc: 76.5, azi: 59.8 },
-  ];
-
-  S.plan.stations = planStations;
-  S.survey.stations = surveyStations;
-
-  // Set up fake raw/headers so preview can show
-  S.plan.headers = ['MD', 'INC', 'AZI'];
-  S.plan.raw = planStations.map(s => [String(s.md), String(s.inc), String(s.azi)]);
-  S.survey.headers = ['MD', 'INC', 'AZI'];
-  S.survey.raw = surveyStations.map(s => [String(s.md), String(s.inc), String(s.azi)]);
-
-  // Set dropdowns to 0,1,2
-  ['planMD','planInc','planAzi','surveyMD','surveyInc','surveyAzi'].forEach((id, idx) => {
-    const sel = document.getElementById(id);
-    sel.innerHTML = '<option value="0">MD</option><option value="1">INC</option><option value="2">AZI</option>';
-    sel.value = idx % 3;
-  });
-
-  // Show preview tables
-  ['plan','survey'].forEach(type => {
-    const container = document.getElementById(type + 'Preview');
-    const tableDiv = document.getElementById(type + 'PreviewTable');
-    container.style.display = 'block';
-    document.getElementById(type + 'Zone').classList.add('loaded');
-    document.getElementById(type + 'Zone').querySelector('p').textContent = 'Sample Data Loaded';
-
-    let html = '<table><thead><tr><th>MD</th><th>INC</th><th>AZI</th></tr></thead><tbody>';
-    S[type].raw.slice(0, 10).forEach(row => {
-      html += '<tr>';
-      row.forEach(c => html += '<td class="mono">' + c + '</td>');
-      html += '</tr>';
-    });
-    html += '</tbody></table>';
-    tableDiv.innerHTML = html;
-  });
-
-  // Sample formation tops
-  S.formations = [
-    { name: 'Overburden Shale', tvd: 200 },
-    { name: 'Cap Rock', tvd: 500 },
-    { name: 'Reservoir A', tvd: 850 },
-    { name: 'Reservoir B', tvd: 1200 },
-    { name: 'Basement', tvd: 1800 }
-  ];
-
-  toast('Sample data loaded — click Process Data to continue', 'info');
-}
-
-/* ===== ABOUT MODAL ===== */
-function openAbout() { document.getElementById('aboutModal').classList.add('active'); }
-function closeAbout() { document.getElementById('aboutModal').classList.remove('active'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAbout(); });
-
-/* ===== INITIALIZE ===== */
-document.getElementById('footerYear').textContent = new Date().getFullYear();
-document.getElementById('modalYear').textContent  = new Date().getFullYear();
-renderFormationTops();
-renderFormationStats();
-
-// Redraw canvases on window resize
-let resizeTimer;
-window.addEventListener('resize', () => {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => { drawPlanView(); drawVS(); }, 200);
-});
-
-// Handle keyboard shortcut: Enter to process on import tab
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && document.getElementById('tab-import').classList.contains('active')) {
-    processData();
-  }
-});
-</script>
+<!-- =====================================================================
+     Application scripts — loaded in dependency order.
+     All are plain globals (no ES modules) so they can be dropped into a
+     GitHub Pages static host without a build step.
+     ===================================================================== -->
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/mincurve.js"></script>
+<script src="js/parsers.js"></script>
+<script src="js/process.js"></script>
+<script src="js/tables.js"></script>
+<script src="js/plots.js"></script>
+<script src="js/formations.js"></script>
+<script src="js/query.js"></script>
+<script src="js/pdf.js"></script>
+<script src="js/interactions.js"></script>
 </body>
 </html>
