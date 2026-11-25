@@ -1,299 +1,234 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WellPath Analyst</title>
-
-<!-- External libraries (CDN) -->
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-
-<!-- Fonts & icons -->
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-<!-- Local stylesheet -->
-<link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WellPath Analyst</title>
+    <meta name="author" content="Ismail Harkat">
+    <meta name="description" content="WellPath Analyst — compare directional surveys against the plan with minimum curvature, in your browser.">
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/svg2pdf.js@2.2.3/dist/svg2pdf.umd.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<div class="toast-container" id="toasts"></div>
-
-<!-- ================= HEADER ================= -->
-<header style="background:linear-gradient(180deg,rgba(17,26,46,.95),var(--bg));border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;backdrop-filter:blur(12px)">
-  <div style="display:flex;align-items:center;gap:12px">
-    <div style="width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#d48800);display:flex;align-items:center;justify-content:center">
-      <i class="fas fa-route" style="color:#0a0f1e;font-size:16px"></i>
-    </div>
-    <div>
-      <h1 style="font-size:18px;font-weight:900;letter-spacing:-.5px">WellPath Analyst</h1>
-      <p style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Minimum Curvature Survey Comparison</p>
-    </div>
-  </div>
-  <div style="display:flex;align-items:center;gap:10px">
-    <div id="statusBadge" class="badge badge-plan" style="font-size:11px">No Data Loaded</div>
-    <button class="btn btn-outline btn-sm" onclick="openAbout()" title="About this tool"><i class="fas fa-info-circle" style="margin-right:4px"></i>About</button>
-  </div>
-</header>
-
-<!-- ================= TABS ================= -->
-<nav style="background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:4px;overflow-x:auto">
-  <button class="tab-btn active" onclick="switchTab('import')"><i class="fas fa-file-import" style="margin-right:6px"></i>Import</button>
-  <button class="tab-btn" onclick="switchTab('data')"><i class="fas fa-table" style="margin-right:6px"></i>Data</button>
-  <button class="tab-btn" onclick="switchTab('comparison')"><i class="fas fa-arrows-alt-h" style="margin-right:6px"></i>Comparison</button>
-  <button class="tab-btn" onclick="switchTab('query')"><i class="fas fa-search" style="margin-right:6px"></i>Query</button>
-  <button class="tab-btn" onclick="switchTab('formations')"><i class="fas fa-layer-group" style="margin-right:6px"></i>Formations</button>
-</nav>
-
-<!-- ================= MAIN ================= -->
-<main style="max-width:1400px;margin:0 auto;padding:24px">
-
-  <!-- ---------- IMPORT TAB ---------- -->
-  <div class="tab-content active" id="tab-import">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
-      <div class="card">
-        <div class="section-title"><i class="fas fa-drafting-compass" style="color:var(--plan)"></i> Plan File</div>
-        <div class="file-zone" id="planZone" onclick="document.getElementById('planFile').click()">
-          <input type="file" id="planFile" accept=".csv,.las,.xlsx,.xls" style="display:none" onchange="handleFileUpload('plan',this)">
-          <i class="fas fa-cloud-upload-alt" style="font-size:28px;color:var(--muted);margin-bottom:8px"></i>
-          <p style="font-size:13px;color:var(--muted)">Upload CSV, LAS, or Excel file</p>
+<div class="header">
+    <div class="brand">
+        <div class="brand-mark">WA</div>
+        <div class="brand-text">
+            <h2>WellPath Analyst</h2>
+            <small>Survey vs Plan &middot; Minimum Curvature &middot; Formation Tops</small>
         </div>
-        <div id="planPreview" style="margin-top:16px;display:none">
-          <div class="section-title" style="font-size:11px">Preview</div>
-          <div class="table-wrap" id="planPreviewTable"></div>
-          <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-            <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">MD</label><select id="planMD" class="mono" style="width:100%"></select></div>
-            <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Inc</label><select id="planInc" class="mono" style="width:100%"></select></div>
-            <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Azi</label><select id="planAzi" class="mono" style="width:100%"></select></div>
-          </div>
+    </div>
+    <div class="header-actions">
+        <span id="statusBadge" class="status-badge">No data loaded</span>
+        <div class="unit-switch" role="group" aria-label="Unit system">
+            <button type="button" data-unit="m" onclick="setUnits('m')" title="Metres, deg/30m">Metric (m)</button>
+            <button type="button" data-unit="ft" onclick="setUnits('ft')" title="Feet, deg/100ft">Field (ft)</button>
         </div>
-      </div>
-      <div class="card">
-        <div class="section-title"><i class="fas fa-satellite-dish" style="color:var(--survey)"></i> Survey File</div>
-        <div class="file-zone" id="surveyZone" onclick="document.getElementById('surveyFile').click()">
-          <input type="file" id="surveyFile" accept=".csv,.las,.xlsx,.xls" style="display:none" onchange="handleFileUpload('survey',this)">
-          <i class="fas fa-cloud-upload-alt" style="font-size:28px;color:var(--muted);margin-bottom:8px"></i>
-          <p style="font-size:13px;color:var(--muted)">Upload CSV, LAS, or Excel file</p>
+        <div class="btn-group">
+            <button class="btn btn-export" onclick="exportCSV()" title="The table shown below, as CSV">CSV</button>
+            <button class="btn btn-export" onclick="exportExcel()">Excel</button>
+            <button class="btn btn-export" id="btnPdf" onclick="exportPDFReport()">PDF report</button>
+            <button class="btn btn-about" onclick="openAbout()">About</button>
         </div>
-        <div id="surveyPreview" style="margin-top:16px;display:none">
-          <div class="section-title" style="font-size:11px">Preview</div>
-          <div class="table-wrap" id="surveyPreviewTable"></div>
-          <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-            <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">MD</label><select id="surveyMD" class="mono" style="width:100%"></select></div>
-            <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Inc</label><select id="surveyInc" class="mono" style="width:100%"></select></div>
-            <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Azi</label><select id="surveyAzi" class="mono" style="width:100%"></select></div>
-          </div>
-        </div>
-      </div>
     </div>
-
-    <!-- Well metadata + Process controls -->
-    <div class="card" style="display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap">
-      <div>
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Well Name / ID</label>
-        <input type="text" id="wellName" placeholder="e.g. RN-142" style="width:180px" class="mono">
-      </div>
-      <div>
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Field / Project</label>
-        <input type="text" id="wellField" placeholder="e.g. Rhourde Nouss" style="width:180px" class="mono">
-      </div>
-      <div>
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">VS Reference Azimuth (deg)</label>
-        <input type="number" id="vsAzimuth" value="0" step="0.1" style="width:120px" class="mono">
-      </div>
-      <button class="btn btn-accent" onclick="processData()" style="padding:10px 32px;font-size:14px"><i class="fas fa-cogs" style="margin-right:6px"></i>Process Data</button>
-      <button class="btn btn-outline" onclick="loadSampleData()"><i class="fas fa-flask" style="margin-right:6px"></i>Load Sample Data</button>
-    </div>
-  </div>
-
-  <!-- ---------- DATA TAB ---------- -->
-  <div class="tab-content" id="tab-data">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
-      <div class="card">
-        <div class="section-title"><span class="badge badge-plan">PLAN</span> Stations <span id="planCount" class="mono" style="color:var(--muted);font-size:12px"></span></div>
-        <div class="table-wrap" id="planDataTable" style="max-height:400px"></div>
-      </div>
-      <div class="card">
-        <div class="section-title"><span class="badge badge-survey">SURVEY</span> Stations <span id="surveyCount" class="mono" style="color:var(--muted);font-size:12px"></span></div>
-        <div class="table-wrap" id="surveyDataTable" style="max-height:400px"></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="section-title"><i class="fas fa-plus-circle" style="color:var(--accent)"></i> Add Station Manually</div>
-      <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap">
-        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Add To</label><select id="addTarget" style="width:120px"><option value="survey">Survey</option><option value="plan">Plan</option></select></div>
-        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">MD (m)</label><input type="number" id="addMD" step="0.1" class="mono" style="width:110px"></div>
-        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Inc (deg)</label><input type="number" id="addInc" step="0.01" class="mono" style="width:110px"></div>
-        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Azi (deg)</label><input type="number" id="addAzi" step="0.01" class="mono" style="width:110px"></div>
-        <button class="btn btn-accent" onclick="addManualStation()"><i class="fas fa-plus" style="margin-right:4px"></i>Add</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ---------- COMPARISON TAB ---------- -->
-  <div class="tab-content" id="tab-comparison">
-    <div class="range-bar">
-      <div style="display:flex;align-items:center;gap:6px"><i class="fas fa-filter" style="color:var(--accent)"></i><strong style="font-size:12px;text-transform:uppercase;letter-spacing:.8px">Depth Range Filter</strong></div>
-      <div style="display:flex;align-items:flex-end;gap:8px">
-        <div><label>Filter By</label><select id="rangeBy" style="width:90px"><option value="md">MD</option><option value="tvd">TVD</option></select></div>
-        <div><label>Min (m)</label><input type="number" id="rangeMin" step="1" class="mono" placeholder="auto"></div>
-        <div><label>Max (m)</label><input type="number" id="rangeMax" step="1" class="mono" placeholder="auto"></div>
-      </div>
-      <button class="btn btn-accent btn-sm" onclick="applyRange()"><i class="fas fa-check" style="margin-right:4px"></i>Apply</button>
-      <button class="btn btn-outline btn-sm" onclick="resetRange()"><i class="fas fa-undo" style="margin-right:4px"></i>Reset</button>
-      <div id="rangeIndicator" class="range-indicator empty" style="margin-left:auto">Full range</div>
-      <button class="btn btn-accent btn-sm" onclick="exportPDFReport()" title="Export PDF"><i class="fas fa-file-pdf" style="margin-right:6px"></i>Export PDF</button>
-    </div>
-
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px" id="summaryCards"></div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
-      <div class="plot-wrap">
-        <div class="plot-header">
-          <div class="plot-title"><i class="fas fa-compass"></i>Plan View — North vs East</div>
-          <div class="plot-actions">
-            <button class="btn btn-ghost" id="zoomBtnPlan" onclick="toggleZoomMode('planView')" title="Rectangle Zoom"><i class="fas fa-search-plus"></i> Zoom</button>
-            <button class="btn btn-ghost" id="resetBtnPlan" onclick="resetPlotZoom('planView')" title="Reset Zoom" style="display:none"><i class="fas fa-search-minus"></i> Reset</button>
-            <button class="btn btn-ghost" onclick="exportCanvasPNG('planViewCanvas','PlanView')" title="Export PNG"><i class="fas fa-download"></i> PNG</button>
-          </div>
-        </div>
-        <div class="plot-body" style="position:relative">
-          <canvas id="planViewCanvas" width="700" height="560"></canvas>
-          <div id="selRectPlan" style="position:absolute;border:1.5px dashed var(--accent);background:rgba(232,160,0,.08);pointer-events:none;display:none;z-index:10"></div>
-          <div id="tooltipPlan" class="canvas-tooltip"></div>
-        </div>
-      </div>
-
-      <div class="plot-wrap">
-        <div class="plot-header">
-          <div class="plot-title"><i class="fas fa-ruler-vertical"></i>Vertical Section — VS vs TVD</div>
-          <div class="plot-actions">
-            <button class="btn btn-ghost" id="zoomBtnVS" onclick="toggleZoomMode('vsView')" title="Rectangle Zoom"><i class="fas fa-search-plus"></i> Zoom</button>
-            <button class="btn btn-ghost" id="resetBtnVS" onclick="resetPlotZoom('vsView')" title="Reset Zoom" style="display:none"><i class="fas fa-search-minus"></i> Reset</button>
-            <button class="btn btn-ghost" onclick="exportCanvasPNG('vsCanvas','VerticalSection')" title="Export PNG"><i class="fas fa-download"></i> PNG</button>
-          </div>
-        </div>
-        <div class="plot-body" style="position:relative">
-          <canvas id="vsCanvas" width="700" height="560"></canvas>
-          <div id="selRectVS" style="position:absolute;border:1.5px dashed var(--accent);background:rgba(232,160,0,.08);pointer-events:none;display:none;z-index:10"></div>
-          <div id="tooltipVS" class="canvas-tooltip"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="section-title"><i class="fas fa-exchange-alt" style="color:var(--accent)"></i> Survey vs Plan Comparison</div>
-      <div class="table-wrap" id="comparisonTable" style="max-height:500px"></div>
-    </div>
-  </div>
-
-  <!-- ---------- QUERY TAB ---------- -->
-  <div class="tab-content" id="tab-query">
-    <div class="card" style="margin-bottom:24px">
-      <div class="section-title"><i class="fas fa-search" style="color:var(--accent)"></i> Query Parameters</div>
-      <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
-        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Query By</label><select id="queryType" style="width:130px"><option value="md">MD (m)</option><option value="tvd">TVD (m)</option><option value="vs">VS (m)</option></select></div>
-        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Value</label><input type="number" id="queryValue" step="0.1" class="mono" style="width:150px"></div>
-        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Source</label><select id="querySource" style="width:130px"><option value="both">Both</option><option value="plan">Plan Only</option><option value="survey">Survey Only</option></select></div>
-        <button class="btn btn-accent" onclick="runQuery()"><i class="fas fa-bolt" style="margin-right:4px"></i>Query</button>
-      </div>
-    </div>
-    <div id="queryResults" style="display:grid;gap:24px"></div>
-  </div>
-
-  <!-- ---------- FORMATIONS TAB ---------- -->
-  <div class="tab-content" id="tab-formations">
-    <div class="card" style="margin-bottom:24px">
-      <div class="section-title"><i class="fas fa-layer-group" style="color:var(--accent)"></i> Add Formation Top</div>
-      <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap">
-        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Name</label><input type="text" id="fmName" style="width:170px" placeholder="e.g. Cap Rock"></div>
-        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">TVD (m)</label><input type="number" id="fmTVD" step="0.1" class="mono" style="width:110px"></div>
-        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Dip (°)</label><input type="number" id="fmDip" step="0.1" min="0" max="90" class="mono" style="width:90px" value="0"></div>
-        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Dip Azi (°)</label><input type="number" id="fmDipAzi" step="0.1" min="0" max="360" class="mono" style="width:100px" value="0"></div>
-        <button class="btn btn-accent" onclick="addFormation()"><i class="fas fa-plus" style="margin-right:4px"></i>Add</button>
-      </div>
-      <div class="hint"><i class="fas fa-info-circle"></i> Dip Azimuth = compass bearing of down-dip direction. Strike = Dip Azi − 90°.</div>
-    </div>
-
-    <div class="card" style="margin-bottom:24px">
-      <div class="section-title">Formation Tops</div>
-      <div class="table-wrap" id="formationTopsTable"></div>
-    </div>
-
-    <div class="card">
-      <div class="section-title">
-        <i class="fas fa-cubes" style="color:var(--formation)"></i> Formation Thickness Statistics
-        <span style="font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0;font-style:italic;margin-left:8px">MT | AVT | TVT | TST</span>
-      </div>
-      <div class="table-wrap" id="formationStatsTable" style="max-height:500px"></div>
-    </div>
-  </div>
-
-</main>
-
-<!-- ================= FOOTER ================= -->
-<footer>
-  <div style="max-width:1400px;margin:0 auto">
-    <strong style="color:var(--text)">WellPath Analyst</strong> — Minimum Curvature Survey Comparison Tool<br>
-    Developed by <a href="mailto:geoharkat@gmail.com">Ismail Harkat</a> &nbsp;·&nbsp; <a href="mailto:geoharkat@gmail.com">geoharkat@gmail.com</a> &nbsp;·&nbsp; MIT License &nbsp;·&nbsp; © <span id="footerYear"></span> Ismail Harkat
-  </div>
-</footer>
-
-<!-- ================= ABOUT MODAL ================= -->
-<div class="modal-backdrop" id="aboutModal" onclick="if(event.target===this)closeAbout()">
-  <div class="modal-box">
-    <button class="modal-close" onclick="closeAbout()" aria-label="Close"><i class="fas fa-times"></i></button>
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-      <div style="width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#d48800);display:flex;align-items:center;justify-content:center"><i class="fas fa-route" style="color:#0a0f1e;font-size:18px"></i></div>
-      <div><h2 style="font-size:18px;font-weight:900">About This Tool</h2><p style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">WellPath Analyst</p></div>
-    </div>
-    <p style="font-size:13px;line-height:1.6;color:var(--text);margin-bottom:12px">
-      WellPath Analyst reconstructs and compares directional-well trajectories with the
-      <strong style="color:var(--accent)">Minimum Curvature Method (MCM)</strong> — the industry-standard
-      algorithm inside Compass, WellPlan, and StarSteer. MCM joins each pair of survey stations with a
-      smooth circular arc, yielding TVD, N/E, Vertical Section, DLS, and Closure that match commercial
-      survey-management packages to the centimetre.
-    </p>
-    <p style="font-size:13px;line-height:1.6;color:var(--text);margin-bottom:12px">
-      <strong>Built for</strong> wellsite geologists, directional drillers, and drilling engineers who need
-      a fast, offline, private way to QC rig-site surveys, compute deviations from plan for morning meetings,
-      analyse formation thickness (MT, AVT, TVT, TST) with true-dip corrections, and export a publication-
-      quality PDF for partners and JV reports. Everything runs in the browser — no cloud, no upload, no
-      leaked well data.
-    </p>
-    <p style="font-size:12px;line-height:1.55;color:var(--muted);margin-bottom:6px">
-      Developed by <strong style="color:var(--accent)">Ismail Harkat</strong> — Senior Wellsite Geologist,
-      Sonatrach (Rhourde Nouss, Algeria) — as an open-source companion to commercial survey-management
-      software. MIT License. Contact:
-      <a href="mailto:geoharkat@gmail.com" style="color:var(--accent)">geoharkat@gmail.com</a>.
-    </p>
-    <p style="font-size:11px;line-height:1.5;color:var(--muted);margin:0">
-      Architecture: <span class="mono" style="color:var(--text)">index.html</span> ·
-      <span class="mono" style="color:var(--text)">styles.css</span> ·
-      <span class="mono" style="color:var(--text)">js/*.js</span> (11 modules).
-    </p>
-    <button class="btn btn-accent" style="width:100%;margin-top:16px" onclick="closeAbout()">Close</button>
-  </div>
 </div>
 
-<!-- =====================================================================
-     Application scripts — loaded in dependency order.
-     All are plain globals (no ES modules) so they can be dropped into a
-     GitHub Pages static host without a build step.
-     ===================================================================== -->
+<div class="container">
+    <div class="sidebar">
+
+        <div class="section-title" style="margin-top:4px">Plan &amp; Survey Files</div>
+        <div class="file-card" id="card-plan">
+            <div class="file-head"><span class="badge badge-plan">PLAN</span>
+                <button class="btn btn-primary" onclick="pickFile('plan')">Choose file</button></div>
+            <input type="file" id="file-plan" accept=".csv,.tsv,.txt,.las,.xlsx,.xlsm,.xls" hidden>
+            <div id="import-plan"></div>
+        </div>
+        <div class="file-card" id="card-survey">
+            <div class="file-head"><span class="badge badge-survey">SURVEY</span>
+                <button class="btn btn-primary" onclick="pickFile('survey')">Choose file</button></div>
+            <input type="file" id="file-survey" accept=".csv,.tsv,.txt,.las,.xlsx,.xlsm,.xls" hidden>
+            <div id="import-survey"></div>
+        </div>
+        <div class="ann-help">CSV, LAS or Excel with MD, inclination and azimuth. Drop a file on a card or choose it. Files are read in your browser and are not uploaded.</div>
+        <div class="button-row">
+            <button class="btn btn-success" onclick="loadSample()">Load sample data</button>
+            <button class="btn btn-danger" onclick="clearAll()">Clear all</button>
+        </div>
+        <div id="warnings" class="plan-warnings" role="status"></div>
+
+        <div class="section-title">Well Details &amp; Vertical Section</div>
+        <div class="well-name-block">
+            <label for="wellName">Well Name</label>
+            <input type="text" id="wellName" placeholder="e.g. RN-142" oninput="onDetailsChanged()">
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label for="wellField">Field / project</label><input type="text" id="wellField" placeholder="optional" oninput="onDetailsChanged()"></div>
+            <div class="form-group"><label for="preparedBy">Prepared by</label><input type="text" id="preparedBy" placeholder="optional" oninput="onDetailsChanged()"></div>
+        </div>
+        <div class="vsaz-box">
+            <div class="form-row">
+                <div class="form-group" style="margin-bottom:0"><label for="vsAzimuth">VS reference azimuth (deg)</label><input type="number" id="vsAzimuth" value="0" step="any" onchange="onVsAzimuth(this.value)"></div>
+                <div class="form-group" style="margin-bottom:0;display:flex;align-items:flex-end"><button class="btn btn-primary" style="margin:0;width:100%" onclick="autoVsAzimuth()">Auto (Target)</button></div>
+            </div>
+            <small>Used for the vertical section and the apparent dip of formations.</small>
+        </div>
+
+        <div class="section-title">Depth Range Filter</div>
+        <div class="solver-box">
+            <div class="form-row">
+                <div class="form-group"><label for="rangeBy">Filter by</label><select id="rangeBy"><option value="md">MD</option><option value="tvd">TVD</option></select></div>
+                <div class="form-group"><label for="rangeMin">Min (<span class="u-len">m</span>)</label><input type="number" id="rangeMin" step="any" placeholder="start"></div>
+                <div class="form-group"><label for="rangeMax">Max (<span class="u-len">m</span>)</label><input type="number" id="rangeMax" step="any" placeholder="end"></div>
+            </div>
+            <div class="button-row">
+                <button class="btn btn-primary" onclick="applyRange()">Apply</button>
+                <button class="btn" onclick="resetRange()">Reset</button>
+            </div>
+            <div id="rangeIndicator" class="range-indicator">Full range</div>
+        </div>
+
+        <div class="section-title">Query a Depth</div>
+        <div class="solver-box">
+            <div class="form-row">
+                <div class="form-group"><label for="queryType">Query by</label><select id="queryType"><option value="md">MD</option><option value="tvd">TVD</option><option value="vs">VS</option></select></div>
+                <div class="form-group"><label for="queryValue">Value (<span class="u-len">m</span>)</label><input type="number" id="queryValue" step="any"></div>
+                <div class="form-group"><label for="querySource">Source</label><select id="querySource"><option value="both">Both</option><option value="plan">Plan</option><option value="survey">Survey</option></select></div>
+            </div>
+            <button class="btn btn-solver" onclick="runQuery()" style="width:100%">Query</button>
+            <div id="queryResults"></div>
+        </div>
+
+        <div class="section-title">Formation Tops</div>
+        <div class="vsaz-box fm-add">
+            <div class="form-group"><label for="fmName">Name</label><input type="text" id="fmName" placeholder="e.g. Cap Rock"></div>
+            <div class="form-row">
+                <div class="form-group"><label for="fmTVD">TVD (<span class="u-len">m</span>)</label><input type="number" id="fmTVD" step="any"></div>
+                <div class="form-group"><label for="fmDip">Dip (deg)</label><input type="number" id="fmDip" step="any" min="0" max="89.9" value="0"></div>
+                <div class="form-group"><label for="fmDipAzi">Dip azi (deg)</label><input type="number" id="fmDipAzi" step="any" min="0" max="360" value="0"></div>
+            </div>
+            <button class="btn btn-formation" onclick="addFormation()" style="width:100%">+ Add Formation Top</button>
+            <small>TVD is the depth picked on the survey (or on the plan when no survey is loaded). Dip azimuth is the compass bearing of the down-dip direction; strike = dip azimuth &minus; 90&deg;.</small>
+        </div>
+        <div class="toggle-row">
+            <input type="checkbox" id="fillToggle" checked onchange="onViewToggle('fill',this.checked)">
+            <label for="fillToggle" style="margin:0;cursor:pointer">Show volume fill between formation tops</label>
+        </div>
+        <div id="formationCards" style="margin-top:10px"></div>
+
+        <div class="section-title">Add Station Manually</div>
+        <div class="solver-box">
+            <div class="form-row">
+                <div class="form-group"><label for="addTarget">Add to</label><select id="addTarget"><option value="survey">Survey</option><option value="plan">Plan</option></select></div>
+                <div class="form-group"><label for="addMD">MD (<span class="u-len">m</span>)</label><input type="number" id="addMD" step="any"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label for="addInc">Inc (deg)</label><input type="number" id="addInc" step="any"></div>
+                <div class="form-group"><label for="addAzi">Azi (deg)</label><input type="number" id="addAzi" step="any"></div>
+            </div>
+            <button class="btn btn-primary" onclick="addManualStation()" style="width:100%">Add station</button>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="sf-title">About This Tool</div>
+            <div class="sf-row"><strong>Developed by</strong>&nbsp; Ismail Harkat</div>
+            <div class="sf-row"><strong>Contact</strong>&nbsp; <a href="mailto:geoharkat@gmail.com">geoharkat@gmail.com</a></div>
+            <div class="sf-row"><strong>License</strong>&nbsp; <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener noreferrer">MIT License</a> &mdash; free to use, modify, and distribute.</div>
+            <div class="sf-copy">&copy; <span id="copyYear"></span> Ismail Harkat.<br>Built for the drilling engineering community.</div>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="plots-area">
+            <div class="kpi-strip" id="kpiStrip"></div>
+            <div class="chart-row">
+                <div class="chart-card">
+                    <div class="plot-header"><h3>Plan View (North vs East)</h3>
+                        <div class="plot-tools"><button class="btn btn-ghost" onclick="resetPlot('chartPlan')">Reset view</button><button class="btn btn-export" onclick="exportPlot('plan','svg')">SVG</button><button class="btn btn-export" onclick="exportPlot('plan','png')">PNG</button></div></div>
+                    <div class="plot-container" style="height:480px"><svg id="chartPlan" class="pan" role="img" aria-label="Plan view of plan and survey"></svg></div>
+                    <div class="plot-hint">Drag to pan &middot; Ctrl + scroll to zoom &middot; Shift + drag to zoom a box &middot; double-click to reset</div>
+                </div>
+                <div class="chart-card">
+                    <div class="plot-header"><h3>Vertical Section</h3>
+                        <div class="plot-tools"><label><input type="checkbox" checked onchange="onViewToggle('trueScale',this.checked)">1:1 scale</label><button class="btn btn-ghost" onclick="resetPlot('chartSection')">Reset view</button><button class="btn btn-export" onclick="exportPlot('section','svg')">SVG</button><button class="btn btn-export" onclick="exportPlot('section','png')">PNG</button></div></div>
+                    <div class="plot-container" style="height:480px"><svg id="chartSection" class="pan" role="img" aria-label="Vertical section with formation tops"></svg></div>
+                    <div class="plot-hint">Drag to pan &middot; Ctrl + scroll to zoom &middot; Shift + drag to zoom a box &middot; double-click to reset</div>
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="plot-header"><h3>3D Well Paths</h3>
+                    <div class="plot-tools"><label><input type="checkbox" onchange="onViewToggle('d3Full',this.checked)">From surface</label>
+                        <button class="btn btn-ghost" onclick="setView3d('iso')">Iso</button><button class="btn btn-ghost" onclick="setView3d('top')">Top</button><button class="btn btn-ghost" onclick="setView3d('north')">Look N</button><button class="btn btn-ghost" onclick="setView3d('east')">Look E</button>
+                        <button class="btn btn-export" onclick="exportPlot('view3d','svg')">SVG</button><button class="btn btn-export" onclick="exportPlot('view3d','png')">PNG</button></div></div>
+                <div class="plot-container" style="height:600px"><svg id="chart3d" class="pan" role="img" aria-label="Three-dimensional view of plan, survey and formation planes"></svg></div>
+                <div class="plot-hint">Drag to rotate &middot; Ctrl + scroll to zoom &middot; double-click to reset</div>
+            </div>
+            <div class="chart-card">
+                <div class="plot-header"><h3>Deviation From Plan vs Measured Depth</h3>
+                    <div class="plot-tools"><button class="btn btn-export" onclick="exportPlot('deviation','svg')">SVG</button><button class="btn btn-export" onclick="exportPlot('deviation','png')">PNG</button></div></div>
+                <div class="plot-container deviation" style="height:620px"><svg id="chartDeviation" class="cross" role="img" aria-label="Deviation from plan against measured depth"></svg></div>
+            </div>
+            <div class="chart-card">
+                <div class="plot-header"><h3>Inclination, Azimuth and Dogleg vs Measured Depth</h3>
+                    <div class="plot-tools"><button class="btn btn-export" onclick="exportPlot('profiles','svg')">SVG</button><button class="btn btn-export" onclick="exportPlot('profiles','png')">PNG</button></div></div>
+                <div class="plot-container" style="height:580px"><svg id="chartProfiles" class="cross" role="img" aria-label="Directional profiles against measured depth"></svg></div>
+            </div>
+        </div>
+        <div class="table-container">
+            <div class="table-header">
+                <span class="table-title">Tables</span>
+                <div class="table-controls">
+                    <label for="tableSelect">Show</label>
+                    <select id="tableSelect" onchange="onTableChange(this.value)">
+                        <option value="comparison">Survey vs Plan</option>
+                        <option value="survey">Survey stations</option>
+                        <option value="plan">Plan stations</option>
+                        <option value="thickness">Formation thickness</option>
+                    </select>
+                </div>
+                <span id="tableInfo" class="table-info"></span>
+            </div>
+            <div id="dataTable"></div>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <div class="footer-left"><span class="copy-symbol">&copy;</span><span class="author-name">Ismail Harkat</span><span>&mdash; WellPath Analyst</span></div>
+    <div class="footer-center">
+        <a href="mailto:geoharkat@gmail.com">geoharkat@gmail.com</a><span class="separator">|</span>
+        <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener noreferrer">MIT License</a><span class="separator">|</span>
+        <span id="footerYear"></span>
+    </div>
+    <div class="footer-right"><span class="badge badge-version">v2.0</span><span>Built for wellsite and directional teams</span></div>
+</footer>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<dialog id="aboutDialog" class="about-dialog" aria-labelledby="aboutTitle">
+    <h3 id="aboutTitle">About WellPath Analyst</h3>
+    <p>WellPath Analyst reconstructs and compares directional-well trajectories with the <strong>Minimum Curvature Method</strong>. Each pair of survey stations is joined by a circular arc, giving TVD, North, East, vertical section, dogleg severity and closure.</p>
+    <p><strong>Built for</strong> wellsite geologists, directional drillers and drilling engineers who need a fast, private way to check rig-site surveys, report deviations from plan, analyse formation thickness (MT, AVT, TVT, TST) and export a report. Everything runs in the browser: no cloud and no upload of well data.</p>
+    <p class="muted">Developed by <strong>Ismail Harkat</strong> — Senior Wellsite Geologist, Sonatrach (Rhourde Nouss, Algeria) — as an open-source companion to commercial survey-management software. MIT License. Contact: <a href="mailto:geoharkat@gmail.com">geoharkat@gmail.com</a>.</p>
+    <p class="muted">The results have not been independently verified against certified software. Cross-check them before operational decisions.</p>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="closeAbout()">Close</button>
+</dialog>
+
+<!-- Plain scripts, loaded in dependency order (no build step). -->
 <script src="js/state.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/mincurve.js"></script>
 <script src="js/parsers.js"></script>
+<script src="js/formations.js"></script>
 <script src="js/process.js"></script>
+<script src="js/query.js"></script>
 <script src="js/tables.js"></script>
 <script src="js/plots.js"></script>
-<script src="js/formations.js"></script>
-<script src="js/query.js"></script>
+<script src="js/export.js"></script>
 <script src="js/pdf.js"></script>
 <script src="js/interactions.js"></script>
 </body>

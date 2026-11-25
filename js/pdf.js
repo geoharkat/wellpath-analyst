@@ -1,303 +1,149 @@
 /* =============================================================
    WellPath Analyst — pdf.js
-   Multi-page PDF report (jsPDF + AutoTable).
-
-   Bug fix in this module
-   ----------------------
-   #1  Each plot must be on its own page.
-       Before: Page 2 held both the Plan View and the Vertical
-               Section stacked vertically, often squashing them.
-       After:  Dedicated page per plot (landscape layout for
-               each), sized to fill the page while keeping the
-               canvas aspect ratio.
+   Landscape PDF report (jsPDF + AutoTable) with vector plots
+   drawn by svg2pdf.
    ============================================================= */
 
-function exportPDFReport(){
-  if(!S.plan.results.length && !S.survey.results.length){
-    toast('Process data first', 'error'); return;
-  }
-  if(typeof window.jspdf === 'undefined'){
-    toast('PDF library failed to load', 'error'); return;
-  }
-  toast('Generating PDF...', 'info');
+/* The built-in PDF fonts only cover Windows-1252: transliterate anything else. */
+const CP1252_EXTRA = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ';
+const SWAPS = { '→':'->', 'Ψ':'Psi', 'ψ':'psi', '−':'-', '∞':'infinite', '≥':'>=', '≤':'<=', '≈':'~' };
+const pdfText = v => Array.from(String(v ?? '')).map(ch => {
+  const c = ch.codePointAt(0);
+  if(c === 10 || (c >= 32 && c <= 126) || (c >= 160 && c <= 255) || CP1252_EXTRA.includes(ch)) return ch;
+  return SWAPS[ch] || '?';
+}).join('');
 
-  // Make sure both canvases are freshly rendered before we snapshot them
-  drawPlanView(); drawVS();
-
+async function buildPDF(){
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4', compress:true });
+  const W = 297, H = 210, M = 12, NAVY = [15, 23, 42], TEAL = [13, 148, 136], GREY = [100, 116, 139];
+  const u = UNITS[S.units], date = todayText(), name = S.wellName || 'Unnamed well';
+  const hasBoth = filteredComparison().length > 0;
+  const title = hasBoth ? 'SURVEY VS PLAN REPORT' : `${WELL_LABELS[S.reference].toUpperCase()} REPORT`;
+  const write = (str, x, y, o = {}) => {
+    doc.setFont('helvetica', o.bold ? 'bold' : 'normal'); doc.setFontSize(o.size || 9);
+    doc.setTextColor(...(o.color || NAVY)); doc.text(pdfText(str), x, y, o.align ? { align:o.align } : undefined);
+  };
+  const heading = (str, y, x = M) => { doc.setFillColor(...TEAL); doc.rect(x, y - 3.6, 1.4, 4.6, 'F'); write(str, x + 3.5, y, { bold:true, size:11 }); };
+  const nf = v => typeof v === 'number' ? v.toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 }) : v;
+  const baseStyles = { font:'helvetica', fontSize:7, cellPadding:1.15, textColor:NAVY, lineColor:[226, 232, 240], lineWidth:0.2, halign:'right' };
+  const table = (head, body, opts = {}) => {
+    doc.autoTable({
+      head:[head.map(pdfText)], body:body.map(r => r.map(v => pdfText(nf(v)))), theme:'grid', margin:{ top:22, bottom:15, left:M, right:M },
+      styles:baseStyles, headStyles:{ fillColor:NAVY, textColor:255, halign:'center', fontSize:7 },
+      alternateRowStyles:{ fillColor:[248, 250, 252] }, columnStyles:{ 0:{ halign:'left' } }, ...opts });
+    return doc.lastAutoTable.finalY;
+  };
+  const room = (y, need) => { if(y + need > H - 16){ doc.addPage(); return 25; } return y; };
+  const chart = async (key, x, y, w, h) => {
+    const PX = 3.6;                                            // SVG pixels per millimetre
+    const r = offscreenChart(key, Math.round(w * PX), Math.round(h * PX), { font:'helvetica', text:pdfText });
+    doc.setFont('helvetica', 'normal');
+    try { await doc.svg(r.svg, { x, y, width:w, height:h }); }
+    finally { r.remove(); }
+    doc.setDrawColor(226, 232, 240); doc.setLineWidth(0.25); doc.rect(x, y, w, h);
+  };
 
-  // Portrait page metrics
-  const pageW  = doc.internal.pageSize.getWidth();   // 210 mm
-  const pageH  = doc.internal.pageSize.getHeight();  // 297 mm
-  const margin = 14;
-  const colW   = pageW - 2*margin;
-
-  // ----- utilities -----
-  function sectionHeader(y, title, opts){
-    const w = (opts && opts.width) ? opts.width : colW;
-    doc.setFillColor(232,160,0);
-    doc.rect(margin, y, w, 6, 'F');
-    doc.setTextColor(10,15,30);
-    doc.setFont('helvetica','bold'); doc.setFontSize(10);
-    doc.text(title.toUpperCase(), margin + 2, y + 4.1);
-    doc.setTextColor(40,40,40);
-    return y + 9;
-  }
-  function ensureSpace(y, need){
-    if(y + need > pageH - margin){ doc.addPage(); return margin + 4; }
-    return y;
-  }
-
-  /* ========== PAGE 1 — COVER + SUMMARY ========== */
-  doc.setFillColor(232,160,0);
-  doc.rect(0, 0, pageW, 16, 'F');
-  doc.setTextColor(10,15,30);
-  doc.setFont('helvetica','bold'); doc.setFontSize(16);
-  doc.text('WellPath Analyst — Comparison Report', margin, 10);
-
-  doc.setTextColor(40,40,40);
-  doc.setFont('helvetica','normal'); doc.setFontSize(9);
-  const wellName  = S.wellName  || '—';
-  const wellField = S.wellField || '—';
-  let y = 22;
-  doc.text('Well: ' + wellName, margin, y);
-  doc.text('Field: ' + wellField, margin + 70, y);
-  y += 5;
-  doc.text('Generated: ' + new Date().toLocaleString(), margin, y);
-  doc.text('VS Ref Azi: ' + S.vsAzimuth.toFixed(2) + '°', margin + 70, y);
-  y += 5;
-  doc.text('Plan stations: ' + S.plan.results.length, margin, y);
-  doc.text('Survey stations: ' + S.survey.results.length, margin + 70, y);
-  y += 2;
-
-  // Trajectory overview
-  y = sectionHeader(y + 3, 'Trajectory Overview');
-  const pStats = trajectoryStats(S.plan.results);
-  const sStats = trajectoryStats(S.survey.results);
-
-  const trajRows = [
-    ['Metric', 'Plan', 'Survey'],
-    ['Start MD (m)', pStats ? pStats.startMD.toFixed(2) : '—', sStats ? sStats.startMD.toFixed(2) : '—'],
-    ['End MD (m)',   pStats ? pStats.endMD.toFixed(2) : '—',   sStats ? sStats.endMD.toFixed(2) : '—'],
-    ['Final TVD (m)', pStats ? pStats.endTVD.toFixed(2) : '—', sStats ? sStats.endTVD.toFixed(2) : '—'],
-    ['Final VS (m)',  pStats ? pStats.endVS.toFixed(2) : '—',  sStats ? sStats.endVS.toFixed(2) : '—'],
-    ['Final Closure (m)', pStats ? pStats.endClosure.toFixed(2) : '—', sStats ? sStats.endClosure.toFixed(2) : '—'],
-    ['Closure Azi (°)',   pStats ? pStats.endClosureAzi.toFixed(2) : '—', sStats ? sStats.endClosureAzi.toFixed(2) : '—'],
-    ['Max Inc (°) @ MD',  pStats ? (pStats.maxInc.toFixed(2) + ' @ ' + pStats.maxIncMD.toFixed(1)) : '—',
-                          sStats ? (sStats.maxInc.toFixed(2) + ' @ ' + sStats.maxIncMD.toFixed(1)) : '—'],
-    ['Max DLS (°/30m) @ MD', pStats ? (pStats.maxDLS.toFixed(2) + ' @ ' + pStats.maxDLSMD.toFixed(1)) : '—',
-                             sStats ? (sStats.maxDLS.toFixed(2) + ' @ ' + sStats.maxDLSMD.toFixed(1)) : '—'],
-    ['Avg DLS (°/30m)', pStats ? pStats.avgDLS.toFixed(2) : '—', sStats ? sStats.avgDLS.toFixed(2) : '—'],
-    ['Kick-off MD / TVD', pStats && pStats.kickoffMD !== null ? (pStats.kickoffMD.toFixed(1) + ' / ' + pStats.kickoffTVD.toFixed(1)) : '—',
-                          sStats && sStats.kickoffMD !== null ? (sStats.kickoffMD.toFixed(1) + ' / ' + sStats.kickoffTVD.toFixed(1)) : '—'],
-    ['Landing (85°) MD / TVD', pStats && pStats.landingMD !== null ? (pStats.landingMD.toFixed(1) + ' / ' + pStats.landingTVD.toFixed(1)) : '—',
-                               sStats && sStats.landingMD !== null ? (sStats.landingMD.toFixed(1) + ' / ' + sStats.landingTVD.toFixed(1)) : '—']
-  ];
-  doc.autoTable({
-    startY: y,
-    head: [trajRows[0]],
-    body: trajRows.slice(1),
-    styles: { fontSize:8, cellPadding:1.8 },
-    headStyles: { fillColor:[22,32,53], textColor:[232,160,0], fontStyle:'bold' },
-    columnStyles: { 0:{ fontStyle:'bold', cellWidth: 60 } },
-    margin: { left: margin, right: margin }
+  /* ---- 1. summary ---- */
+  let y = 26;
+  write(name, M, y + 2, { bold:true, size:20 });
+  const facts = [['Field / project', S.wellField], ['Prepared by', S.preparedBy], ['Date', date]].filter(f => f[1]).map(f => `${f[0]}: ${f[1]}`).join('     |     ');
+  write(facts, M, y + 9, { color:GREY });
+  write(`Units: ${S.units === 'm' ? 'metric (m, deg/30m)' : 'field (ft, deg/100ft)'}     |     Survey method: minimum curvature     |     VS azimuth: ${S.vsAzimuth.toFixed(2)} deg     |     Depth range: ${rangeText()}`, M, y + 14, { color:GREY });
+  y += 19;
+  const tiles = summaryTiles(), tw = (W - 2 * M - 5 * 3) / 6;
+  tiles.forEach((t, i) => {
+    const x = M + i * (tw + 3);
+    doc.setFillColor(240, 253, 250); doc.setDrawColor(153, 246, 228); doc.setLineWidth(0.25); doc.roundedRect(x, y, tw, 19, 1.5, 1.5, 'FD');
+    write(t[0], x + 3, y + 5.5, { size:7.5, color:GREY });
+    write(String(t[1]), x + 3, y + 12.5, { size:14, bold:true });
+    write(t[2], x + 3, y + 16.7, { size:7, color:GREY });
   });
-  y = doc.lastAutoTable.finalY + 4;
-
-  // Deviation summary (only when comparison is available)
-  if(S.comparison.length){
-    y = ensureSpace(y, 40);
-    y = sectionHeader(y, 'Deviation Summary (Survey vs Plan)');
-    const maxCC = Math.max(...S.comparison.map(c => c.cc));
-    const avgCC = S.comparison.reduce((s, c) => s + c.cc, 0) / S.comparison.length;
-    const maxAB = Math.max(...S.comparison.map(c => Math.abs(c.aboveBelow)));
-    const maxLR = Math.max(...S.comparison.map(c => Math.abs(c.leftRight)));
-    const maxFB = Math.max(...S.comparison.map(c => Math.abs(c.frontBehind)));
-    const endCC = S.comparison[S.comparison.length - 1].cc;
-    const devRows = [
-      ['Max Centre-Centre (m)', maxCC.toFixed(2)],
-      ['Avg Centre-Centre (m)', avgCC.toFixed(2)],
-      ['End Centre-Centre (m)', endCC.toFixed(2)],
-      ['Max Above/Below (m)',   maxAB.toFixed(2)],
-      ['Max Left/Right (m)',    maxLR.toFixed(2)],
-      ['Max Front/Behind (m)',  maxFB.toFixed(2)]
-    ];
-    doc.autoTable({
-      startY: y,
-      head: [['Metric','Value']],
-      body: devRows,
-      styles: { fontSize:8, cellPadding:1.8 },
-      headStyles: { fillColor:[22,32,53], textColor:[232,160,0], fontStyle:'bold' },
-      columnStyles: { 0:{ fontStyle:'bold', cellWidth: 80 } },
-      margin: { left: margin, right: margin }
-    });
-    y = doc.lastAutoTable.finalY + 4;
+  y += 28;
+  heading('Data sources', y);
+  y = table(SOURCE_HEAD, sourceRows(), { startY:y + 3, styles:{ ...baseStyles, halign:'left' } }) + 8;
+  y = room(y, 70);
+  heading('Trajectory overview', y);
+  const deviations = deviationRows();
+  const leftWidth = deviations.length ? 160 : W - 2 * M;
+  const startY = y + 3, page = doc.getNumberOfPages();
+  y = table(['Metric', 'Plan', 'Survey'], overviewRows(), { startY, tableWidth:leftWidth, columnStyles:{ 0:{ halign:'left', fontStyle:'bold' } } });
+  if(deviations.length){
+    doc.setPage(page);
+    heading('Deviation from plan', startY - 3, M + 168);
+    table(['Item', 'Value', 'Unit'], deviations, { startY, margin:{ top:22, bottom:15, left:M + 168, right:M }, columnStyles:{ 0:{ halign:'left', fontStyle:'bold' }, 2:{ halign:'left' } } });
+    y = Math.max(y, doc.lastAutoTable.finalY);
+  }
+  y += 7;
+  const warnings = warningList();
+  if(warnings.length){
+    y = room(y, 10 + warnings.length * 4.5);
+    write('Warnings', M, y, { bold:true, color:[194, 65, 12] });
+    warnings.forEach(w => doc.splitTextToSize(pdfText('- ' + w), W - 2 * M).forEach(line => { y += 4.5; y = room(y, 4); write(line, M, y, { size:8 }); }));
   }
 
-  /* ========== PLOT PAGES — each plot on its own landscape page ========== */
-  // Helper: add one landscape page that fills with a header + the canvas image
-  function addPlotPage(canvasId, title){
-    const canvas = document.getElementById(canvasId);
-    if(!canvas) return;
-    let dataURL;
-    try { dataURL = canvas.toDataURL('image/png'); } catch(e){ return; }
-
-    // Landscape A4
-    doc.addPage('a4', 'landscape');
-    const pW = doc.internal.pageSize.getWidth();   // 297 mm
-    const pH = doc.internal.pageSize.getHeight();  // 210 mm
-    const m  = 12;
-    const availW = pW - 2*m;
-    const availH = pH - 2*m;
-
-    // Header band (same look as portrait pages, but adjusted to landscape width)
-    doc.setFillColor(232,160,0);
-    doc.rect(m, m, availW, 6, 'F');
-    doc.setTextColor(10,15,30);
-    doc.setFont('helvetica','bold'); doc.setFontSize(10);
-    doc.text(title.toUpperCase(), m + 2, m + 4.1);
-
-    // Fit image under the header, keep aspect ratio
-    const headerH = 6 + 3;                       // band + small gap
-    const imgAreaW = availW;
-    const imgAreaH = availH - headerH;
-    const imgAspect = (canvas.height / canvas.width) || (560/700);
-    let imgW = imgAreaW;
-    let imgH = imgW * imgAspect;
-    if(imgH > imgAreaH){
-      imgH = imgAreaH;
-      imgW = imgH / imgAspect;
-    }
-    const imgX = m + (imgAreaW - imgW)/2;
-    const imgY = m + headerH;
-    doc.addImage(dataURL, 'PNG', imgX, imgY, imgW, imgH);
+  /* ---- plots ---- */
+  doc.addPage();
+  heading('Plan view', 24); heading('Vertical section', 24, M + 139);
+  await chart('plan', M, 28, 134, 165);
+  await chart('section', M + 139, 28, 134, 165);
+  doc.addPage();
+  heading('3D well paths', 24); heading('Directional profiles', 24, M + 144);
+  await chart('view3d', M, 28, 139, 165);
+  await chart('profiles', M + 144, 28, 129, 165);
+  if(hasBoth){
+    doc.addPage();
+    heading('Deviation from plan against measured depth', 24);
+    await chart('deviation', M, 28, W - 2 * M, 165);
   }
 
-  addPlotPage('planViewCanvas', 'Plan View — North vs East');
-  addPlotPage('vsCanvas',       'Vertical Section — VS vs TVD');
-
-  /* ========== FORMATIONS PAGE ========== */
+  /* ---- formations ---- */
   if(S.formations.length){
-    doc.addPage('a4', 'portrait');
-    let yf = margin;
-    yf = sectionHeader(yf, 'Formation Tops');
-    const fmTopsRows = S.formations.map((fm, i) => {
-      const strike = ((fm.dipAzi - 90) % 360 + 360) % 360;
-      return [String(i+1), fm.name, fm.tvd.toFixed(2), fm.dip.toFixed(1), fm.dipAzi.toFixed(1), strike.toFixed(1)];
-    });
-    doc.autoTable({
-      startY: yf,
-      head: [['#','Name','TVD (m)','Dip (°)','Dip Azi (°)','Strike (°)']],
-      body: fmTopsRows,
-      styles: { fontSize:8, cellPadding:1.8 },
-      headStyles: { fillColor:[22,32,53], textColor:[232,160,0], fontStyle:'bold' },
-      margin: { left: margin, right: margin }
-    });
-    yf = doc.lastAutoTable.finalY + 5;
-
-    // Formation thickness stats
-    const fmStatsRows = [];
-    for(let i=0; i<S.formations.length; i++){
-      const fm = S.formations[i];
-      const nextFm = i < S.formations.length - 1 ? S.formations[i+1] : null;
-      if(!nextFm){
-        fmStatsRows.push([fm.name, fm.tvd.toFixed(2), '—', fm.dip.toFixed(1), fm.dipAzi.toFixed(1),
-                          '—','—','—','—','—','—']);
-        continue;
-      }
-      const res = calcFormationThickness(fm.tvd, nextFm.tvd, fm.dip, fm.dipAzi);
-      if(!res){
-        fmStatsRows.push([fm.name, fm.tvd.toFixed(2), nextFm.tvd.toFixed(2), fm.dip.toFixed(1), fm.dipAzi.toFixed(1),
-                          '—','—','—','—','—','—']);
-        continue;
-      }
-      fmStatsRows.push([
-        fm.name,
-        fm.tvd.toFixed(2),
-        nextFm.tvd.toFixed(2),
-        fm.dip.toFixed(1),
-        fm.dipAzi.toFixed(1),
-        res.MT.toFixed(2),
-        res.AVT.toFixed(2),
-        isFinite(res.TVT) ? res.TVT.toFixed(2) : '∞',
-        res.TST.toFixed(2),
-        res.Psi.toFixed(1),
-        res.dlsAvg.toFixed(2)
-      ]);
-    }
-    yf = ensureSpace(yf, 30);
-    yf = sectionHeader(yf, 'Formation Thickness Statistics');
-    doc.setFont('helvetica','italic'); doc.setFontSize(7);
-    // jsPDF standard fonts are Latin-1 only → use roman "Psi" for the Greek letter.
-    const legendTxt = 'MT = Measured Thickness  |  AVT = Apparent Vertical Thickness  |  '
-                    + 'TVT = True Vertical Thickness  |  TST = True Stratigraphic Thickness  |  '
-                    + 'Psi = angle between well axis and formation normal';
-    const legendLines = doc.splitTextToSize(legendTxt, colW);
-    doc.text(legendLines, margin, yf);
-    yf += legendLines.length * 3.2 + 1.5;
-    doc.setFont('helvetica','normal');
-    doc.autoTable({
-      startY: yf,
-      head: [['Formation','Top TVD','Bot TVD','Dip','Dip Azi','MT','AVT','TVT','TST','Psi (deg)','DLS avg']],
-      body: fmStatsRows,
-      styles: { fontSize:7, cellPadding:1.3 },
-      headStyles: { fillColor:[22,32,53], textColor:[232,160,0], fontStyle:'bold', fontSize:7 },
-      columnStyles: {
-        0:{ fontStyle:'bold' },
-        5:{ fillColor:[245,230,255] },
-        6:{ fillColor:[245,230,255] },
-        7:{ fillColor:[245,230,255] },
-        8:{ fillColor:[245,230,255] }
-      },
-      margin: { left: margin, right: margin }
-    });
+    doc.addPage(); y = 25;
+    heading('Formation tops', y);
+    const f = formationTableData(resolvedFormations());
+    y = table(f.head, f.body, { startY:y + 3 }) + 5;
+    write('Each surface passes through the reference-well pick at the entered TVD with the given dip and dip azimuth.', M, y, { size:7.5, color:GREY });
+    y = room(y + 10, 50);
+    heading('Formation thickness', y);
+    const t = thicknessTableData();
+    y = table(t.head, t.body, { startY:y + 3, styles:{ ...baseStyles, fontSize:6.4 }, headStyles:{ fillColor:NAVY, textColor:255, halign:'center', fontSize:6.2 },
+      columnStyles:{ 0:{ halign:'left', fontStyle:'bold' } } }) + 5;
+    write('MT measured thickness | AVT apparent vertical thickness | TVT true vertical thickness | TST true stratigraphic thickness (uses the dip of the upper top) | Psi angle between well axis and bed normal', M, y, { size:7.5, color:GREY });
   }
 
-  /* ========== COMPARISON TABLE ========== */
-  if(S.comparison.length){
-    doc.addPage('a4', 'portrait');
-    let yc = margin;
-    yc = sectionHeader(yc, 'Survey vs Plan — Detailed Comparison');
-    const tableBody = S.comparison.map(c => [
-      c.md.toFixed(1),
-      c.planTVD.toFixed(2),
-      c.surveyTVD.toFixed(2),
-      fmtDir(c.aboveBelow,'Above','Below'),
-      fmtDir(c.leftRight,'Right','Left'),
-      fmtDir(c.frontBehind,'Ahead','Behind'),
-      c.cc.toFixed(2),
-      c.planInc.toFixed(1),
-      c.surveyInc.toFixed(1),
-      c.surveyDLS.toFixed(2)
-    ]);
-    doc.autoTable({
-      startY: yc,
-      head: [['MD','Pl TVD','Sv TVD','A/B','L/R','F/B','C-C','Pl Inc','Sv Inc','DLS']],
-      body: tableBody,
-      styles: { fontSize:7, cellPadding:1.5 },
-      headStyles: { fillColor:[22,32,53], textColor:[232,160,0], fontStyle:'bold', fontSize:7 },
-      margin: { left: margin, right: margin }
-    });
-  }
+  /* ---- comparison or station listing ---- */
+  doc.addPage();
+  const listing = hasBoth ? comparisonTableData(filteredComparison()) : stationTableData(S.reference);
+  heading(listing.title, 25);
+  y = table(listing.head, listing.body, { startY:28 }) + 8;
+  y = room(y, 30);
+  write('Disclaimer', M, y, { bold:true });
+  doc.splitTextToSize(pdfText('This tool is provided "as is" for engineering and educational purposes. It has not been independently verified against a certified survey-management package. Cross-check results with your company-approved software before making decisions that affect well placement, anti-collision or target intersection.'), W - 2 * M)
+    .forEach((line, i) => write(line, M, y + 5 + i * 4, { size:7.5, color:GREY }));
+  write(`WellPath Analyst v${APP_VERSION}  |  (c) ${date.slice(0, 4)} Ismail Harkat  |  geoharkat@gmail.com  |  MIT License`, M, y + 18, { size:7.5, color:GREY });
 
-  /* ========== FOOTERS (use per-page size so landscape pages work) ========== */
-  const pageCount = doc.internal.getNumberOfPages();
-  for(let p = 1; p <= pageCount; p++){
+  /* ---- header and footer on every page ---- */
+  const pages = doc.getNumberOfPages();
+  for(let p = 1; p <= pages; p++){
     doc.setPage(p);
-    const pSz = doc.internal.pageSize;
-    const pW = pSz.getWidth();
-    const pH = pSz.getHeight();
-    doc.setDrawColor(200,200,200); doc.setLineWidth(0.2);
-    doc.line(margin, pH - 10, pW - margin, pH - 10);
-    doc.setFont('helvetica','normal'); doc.setFontSize(7);
-    doc.setTextColor(120,120,120);
-    doc.text('WellPath Analyst  |  ' + (S.wellName || 'Unnamed well'), margin, pH - 6);
-    doc.text('Page ' + p + ' / ' + pageCount, pW/2, pH - 6, { align:'center' });
-    doc.text('(c) Ismail Harkat  |  geoharkat@gmail.com', pW - margin, pH - 6, { align:'right' });
+    doc.setFillColor(...NAVY); doc.rect(0, 0, W, 14, 'F');
+    doc.setFillColor(...TEAL); doc.rect(0, 14, W, 0.8, 'F');
+    write(title, M, 9, { bold:true, size:10, color:[255, 255, 255] });
+    write(`${name}   |   ${date}`, W - M, 9, { size:9, color:[203, 213, 225], align:'right' });
+    doc.setDrawColor(203, 213, 225); doc.setLineWidth(0.2); doc.line(M, H - 10, W - M, H - 10);
+    write('WellPath Analyst - verify before operational use.', M, H - 6, { size:7, color:GREY });
+    write(`Page ${p} of ${pages}`, W - M, H - 6, { size:7.5, color:GREY, align:'right' });
   }
+  doc.setProperties({ title:pdfText(`WellPath Analyst report - ${name}`), creator:`WellPath Analyst v${APP_VERSION}`, author:pdfText(S.preparedBy) });
+  return doc;
+}
 
-  const fname = 'WellPath_Report_' + (S.wellName ? S.wellName.replace(/\s+/g,'_') + '_' : '') + new Date().toISOString().slice(0,10) + '.pdf';
-  doc.save(fname);
-  toast('PDF saved: ' + fname, 'success');
+async function exportPDFReport(){
+  if(!S.reference) return toast('Load a well first', 'error');
+  const button = $('btnPdf');
+  button.disabled = true; button.textContent = 'Building report…';
+  try { (await buildPDF()).save(`WellPath_Report_${fileStem()}_${todayText()}.pdf`); }
+  catch(err){ console.error(err); toast(`PDF export failed: ${err.message}`, 'error'); }
+  finally { button.disabled = false; button.textContent = 'PDF report'; }
 }

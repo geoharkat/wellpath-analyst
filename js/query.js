@@ -1,88 +1,43 @@
 /* =============================================================
    WellPath Analyst — query.js
-   Point-query: given MD / TVD / VS, return interpolated survey
-   and plan positions and their relative deviations.
+   Point query: given MD / TVD / VS, interpolate both wells and
+   report the survey-vs-plan difference. Nothing is extrapolated.
    ============================================================= */
 
+function queryWell(results, type, value, vsAz){
+  if(type === 'md')  return interpAtMD(results, value, vsAz);
+  if(type === 'tvd') return interpAtTVD(results, value, vsAz);
+  return interpAtVS(results, value, vsAz);
+}
+
 function runQuery(){
-  const type = document.getElementById('queryType').value;
-  const val  = parseFloat(document.getElementById('queryValue').value);
-  const source = document.getElementById('querySource').value;
-  if(isNaN(val)){ toast('Enter a numeric value','error'); return; }
-  let planRes = null, svyRes = null;
-  const label = type.toUpperCase();
-
-  if(source==='both' || source==='plan'){
-    if(!S.plan.results.length) toast('No plan data','error');
-    else {
-      if(type==='md')      planRes = interpAtMD(S.plan.results, val);
-      else if(type==='tvd') planRes = interpAtTVD(S.plan.results, val);
-      else if(type==='vs')  planRes = interpAtVS(S.plan.results, val);
-      if(planRes && (type==='tvd' || type==='vs')) planRes = interpAtMD(S.plan.results, planRes.md);
-    }
+  const type = $('queryType').value, raw = parseFloat($('queryValue').value), source = $('querySource').value;
+  if(!Number.isFinite(raw)) return toast('Enter a numeric value', 'error');
+  if(!S.reference) return toast('Load a well first', 'error');
+  const value = fromLen(raw, S.units), found = {}, parts = [];
+  const label = `${type.toUpperCase()} = ${raw} ${U().len}`;
+  WELL_KEYS.filter(k => source === 'both' || source === k).forEach(key => {
+    const results = S.wells[key].results;
+    if(!results.length){ if(source === key) parts.push(`<div class="query-block">No ${key} data loaded.</div>`); return; }
+    const p = queryWell(results, type, value, S.vsAzimuth);
+    if(!p){ parts.push(`<div class="query-block"><span class="badge badge-${key}">${WELL_LABELS[key]}</span> ${label} is outside this well.</div>`); return; }
+    found[key] = p;
+    parts.push(`<div class="query-block"><span class="badge badge-${key}">${WELL_LABELS[key]}</span> at ${label}${queryTable(p)}</div>`);
+  });
+  if(found.plan && found.survey){
+    const d = deviation(found.survey, found.plan, planHeading(S.wells.plan.results, found.plan, S.vsAzimuth));
+    const miss = (v, pos, neg) => { const x = toLen(v, S.units); return `${Math.abs(x).toFixed(2)} ${U().len}${Math.abs(x) < 0.005 ? '' : ' ' + (x > 0 ? pos : neg)}`; };
+    parts.push(`<div class="query-block diff"><b>Survey vs plan</b><dl>
+      <dt>Above / Below</dt><dd>${miss(d.aboveBelow, 'Above', 'Below')}</dd>
+      <dt>Left / Right</dt><dd>${miss(d.leftRight, 'Right', 'Left')}</dd>
+      <dt>Front / Behind</dt><dd>${miss(d.frontBehind, 'Ahead', 'Behind')}</dd>
+      <dt>C-C distance</dt><dd>${fmtLen(d.cc)}</dd></dl></div>`);
   }
-  if(source==='both' || source==='survey'){
-    if(!S.survey.results.length) toast('No survey data','error');
-    else {
-      if(type==='md')      svyRes = interpAtMD(S.survey.results, val);
-      else if(type==='tvd') svyRes = interpAtTVD(S.survey.results, val);
-      else if(type==='vs')  svyRes = interpAtVS(S.survey.results, val);
-      if(svyRes && (type==='tvd' || type==='vs')) svyRes = interpAtMD(S.survey.results, svyRes.md);
-    }
-  }
-
-  const div = document.getElementById('queryResults');
-  let html = '';
-  if(planRes){
-    html += '<div class="card"><div class="section-title"><span class="badge badge-plan">PLAN</span> at '+label+' = '+val+'</div>';
-    html += renderQueryResult(planRes);
-    html += '</div>';
-  }
-  if(svyRes){
-    html += '<div class="card"><div class="section-title"><span class="badge badge-survey">SURVEY</span> at '+label+' = '+val+'</div>';
-    html += renderQueryResult(svyRes);
-    html += '</div>';
-  }
-  if(planRes && svyRes){
-    const dTVD = svyRes.tvd - planRes.tvd;
-    const dN = svyRes.north - planRes.north;
-    const dE = svyRes.east - planRes.east;
-    const pAziRad = planRes.azi * Math.PI/180;
-    const fb = dN*Math.cos(pAziRad) + dE*Math.sin(pAziRad);
-    const lr = -dN*Math.sin(pAziRad) + dE*Math.cos(pAziRad);
-    const cc = Math.sqrt(dTVD*dTVD + dN*dN + dE*dE);
-    html += '<div class="card" style="border-color:var(--accent)"><div class="section-title"><i class="fas fa-exchange-alt" style="color:var(--accent)"></i> Differences</div><div class="query-result">';
-    html += diffCard('Above/Below', -dTVD, 'Above', 'Below');
-    html += diffCard('Left/Right', lr, 'Right', 'Left');
-    html += diffCard('Front/Behind', fb, 'Ahead', 'Behind');
-    html += diffCardAbs('C-C Distance', cc);
-    html += '</div></div>';
-  }
-  if(!planRes && !svyRes) html = '<div class="card" style="text-align:center;color:var(--muted);padding:40px">No results found.</div>';
-  div.innerHTML = html;
+  $('queryResults').innerHTML = parts.join('');
 }
-
-function renderQueryResult(r){
-  const items = [
-    { label:'MD',     val:r.md.toFixed(2),     unit:'m' },
-    { label:'TVD',    val:r.tvd.toFixed(2),    unit:'m' },
-    { label:'Inc',    val:r.inc.toFixed(2),    unit:'deg' },
-    { label:'Azi',    val:r.azi.toFixed(2),    unit:'deg' },
-    { label:'North',  val:r.north.toFixed(2),  unit:'m' },
-    { label:'East',   val:r.east.toFixed(2),   unit:'m' },
-    { label:'VS',     val:r.vs.toFixed(2),     unit:'m' },
-    { label:'DLS',    val:r.dls.toFixed(2),    unit:'deg/30m' },
-    { label:'Closure',val:r.closure.toFixed(2),unit:'m' }
-  ];
-  return '<div class="query-result">'
-    + items.map(i => '<div class="query-item"><div class="q-label">'+i.label+'</div><div class="q-val">'+i.val+' <span style="font-size:10px;color:var(--muted);font-weight:400">'+i.unit+'</span></div></div>').join('')
-    + '</div>';
-}
-
-function diffCard(l, v, p, n){
-  const d = Math.abs(v) < 0.005 ? '—' : (v > 0 ? p : n);
-  return '<div class="query-item"><div class="q-label">'+l+'</div><div class="q-val">'+Math.abs(v).toFixed(2)+' <span style="font-size:11px;color:var(--muted);font-weight:600">'+d+'</span></div></div>';
-}
-function diffCardAbs(l, v){
-  return '<div class="query-item"><div class="q-label">'+l+'</div><div class="q-val">'+v.toFixed(2)+' <span style="font-size:10px;color:var(--muted)">m</span></div></div>';
+function queryTable(r){
+  const L = v => `${toLen(v, S.units).toFixed(2)} ${U().len}`;
+  const items = [['MD', L(r.md)], ['TVD', L(r.tvd)], ['Inc', r.inc.toFixed(2) + '°'], ['Azi', r.azi.toFixed(2) + '°'], ['North', L(r.north)], ['East', L(r.east)],
+    ['VS', L(r.vs)], ['DLS', `${toDls(r.dls, S.units).toFixed(2)} ${U().dls}`], ['Closure', `${L(r.closure)} @ ${r.closureAzi.toFixed(1)}°`]];
+  return `<dl>${items.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`;
 }

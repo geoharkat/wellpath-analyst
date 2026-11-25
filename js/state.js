@@ -1,37 +1,31 @@
 /* =============================================================
    WellPath Analyst — state.js
    Global application state and shared constants.
+   Lengths are stored in metres whatever the display unit.
    ============================================================= */
 
-/* ===== GLOBAL STATE ===== */
+const APP_VERSION = '2.0.0';
+const WELL_KEYS = ['plan', 'survey'];
+const WELL_LABELS = { plan:'Plan', survey:'Survey' };
+const WELL_COLORS = { plan:'#257de0', survey:'#f47230' };
+const FORMATION_COLORS = ['#6a4ce2', '#00b894', '#ee7fac', '#008a17', '#f2a600', '#ec4647'];
+
+function emptyWell(){
+  return { source:null,          // { fileName, sheets, sheet, headerRow, cols, unit, unitGuessed }
+           fileStations:[], skipped:[], manual:[],
+           tie:{ mode:'vertical', tvd:0, north:0, east:0 },
+           results:[], warnings:[] };
+}
+
 const S = {
-  plan:   { raw:[], headers:[], stations:[], results:[] },
-  survey: { raw:[], headers:[], stations:[], results:[] },
+  units: (() => { try { return localStorage.getItem('wpa-units') === 'ft' ? 'ft' : 'm'; } catch(e){ return 'm'; } })(),
+  wells: { plan:emptyWell(), survey:emptyWell() },
   vsAzimuth: 0,
-  wellName: '',
-  wellField: '',
-  comparison: [],
-  formations: [],
-  displayRange: { by:'md', min:null, max:null }
+  wellName: '', wellField: '', preparedBy: '',
+  formations: [], nextId: 1,
+  reference: null,               // well used for formation picks: 'survey' or 'plan'
+  comparison: { rows:[], outside:0 },
+  range: { by:'md', min:null, max:null },
+  view: { trueScale:true, fill:true, d3Full:false },
+  table: 'comparison'
 };
-
-/* Plot zoom rectangles (set by user via drag-zoom) */
-const plotZoom = { planView:null, vsView:null };
-
-/* Per-plot zoom-mode toggle */
-const zoomMode = { planView:false, vsView:false };
-
-/* Last-drawn axis bounds — used by hover & zoom-release for inverse mapping */
-const lastDrawn = { planView:{}, vsView:{} };
-
-/* Palette for formation bands (cycled by index) */
-const FM_BAND_COLORS = [
-  'rgba(192,96,255,0.10)',  // purple
-  'rgba(78,168,255,0.10)',  // blue
-  'rgba(16,212,160,0.10)',  // green
-  'rgba(232,160,0,0.10)',   // amber
-  'rgba(240,68,68,0.10)',   // red
-  'rgba(180,120,255,0.10)', // violet
-  'rgba(120,200,255,0.10)', // sky
-  'rgba(100,220,180,0.10)', // teal
-];

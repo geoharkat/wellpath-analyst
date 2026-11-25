@@ -32,18 +32,18 @@ Because everything runs client-side, the tool is safe to use on confidential wel
 
 ## Features
 
-- **Multi-format import** — CSV, LAS, XLSX, XLS with auto-detection for MD / Inc / Azi columns.
-- **Minimum Curvature computation** — TVD, North, East, VS, DLS, dogleg, closure, closure azimuth.
-- **Side-by-side comparison** — station-by-station Survey vs Plan with interpolation at every survey MD.
-- **Displacement labels** — readable direction words (`2.34 Above`, `0.85 Right`, `3.21 Ahead`, `3.45 C-C`) instead of raw signed numbers.
-- **Interactive plots** — Plan View (North vs East) and Vertical Section (VS vs TVD) rendered on high-DPI HTML5 canvas, with rectangle-drag zoom, hover tooltips, and PNG export.
-- **Formation-aware VS plot** — dipping formation traces drawn as true dip lines in the VS plane, with coloured depth bands and inline formation labels.
-- **PDF report export** — multi-page report covering executive summary, both plots (each on its own landscape page), formation thickness tables, and the full comparison table.
-- **Query tool** — interpolate any station by MD, TVD, or VS; get survey-vs-plan differences at any depth.
-- **Formation tops** — add tops by TVD with dip and dip-azimuth; automatic MT/AVT/TVT/TST, Ψ (well-axis angle to formation normal), average DLS, and MD/Inc/Azi at top & bottom.
-- **Manual station entry** — inject points on the fly without re-uploading.
-- **100% offline-capable** — open `index.html` directly from disk (CDN assets cache after the first load).
-- **Zero data exfiltration** — no server, no analytics, no tracking.
+- **Multi-format import** — CSV, TSV, TXT, LAS, XLSX and XLS, with detection of the header row, columns and depth units. Each file can use its own units.
+- **Metric or field units** — switch between m with deg/30m and ft with deg/100ft at any time.
+- **Minimum curvature** — TVD, North, East, vertical section, DLS, closure and closure azimuth. Positions between stations follow the same arc.
+- **Tie-in** — for data that starts below surface: assume vertical from surface, type the position, or tie the survey to the plan.
+- **Comparison** — at every survey station: Above/Below, Left/Right, Ahead/Behind, centre-to-centre distance at equal MD, and closest distance to the plan.
+- **D3.js plots** — plan view, vertical section (1:1 or stretched), rotatable 3D view, deviation from plan and inclination / azimuth / dogleg profiles, with hover read-outs and zoom.
+- **Formation tops** — dip and dip azimuth; MT, AVT, TVT, TST, Ψ, average DLS, and where the plan crosses each surface.
+- **Depth range filter** — limits the figures, plots, tables and exports to an MD or TVD interval.
+- **Query** — interpolate both wells at any MD, TVD or VS.
+- **Manual stations** — add or remove stations without re-uploading.
+- **Output files** — PDF report with vector plots, Excel workbook, CSV, and PNG or SVG of every plot.
+- **Private** — files are read in your browser; no server, no analytics, no tracking.
 
 ---
 
@@ -51,128 +51,107 @@ Because everything runs client-side, the tool is safe to use on confidential wel
 
 ### Option 1 — Use the live demo
 
-Just open <https://geoharkat.github.io/wellpath-analyst/> and start importing files.
+Open <https://geoharkat.github.io/wellpath-analyst/> and load your files.
 
 ### Option 2 — Run locally
 
 ```bash
 git clone https://github.com/geoharkat/wellpath-analyst.git
 cd wellpath-analyst
-# simply open index.html in your browser, or:
+# open index.html in your browser, or:
 python3 -m http.server 8000
 # then browse to http://localhost:8000
 ```
 
-No build step, no `npm install`, no dependencies to resolve. Everything loads from public CDNs (Tailwind, PapaParse, SheetJS, jsPDF, Font Awesome).
+There is no build step. The libraries load from public CDNs, so the first load needs a network connection.
 
 ### Option 3 — Quick tour with sample data
 
-1. Open the app.
-2. Click **Load Sample Data** on the Import tab.
-3. Click **Process Data**.
-4. Browse Data, Comparison, Query, and Formations tabs.
-5. On the Comparison tab, click **Export PDF Report** to download a full report.
+1. Open the app and click **Load sample data**.
+2. Browse the plots and switch tables with **Show** under the plots.
+3. Click **PDF report** in the header.
+
+Plot controls: drag to pan (rotate in 3D), `Ctrl` + scroll to zoom, `Shift` + drag to zoom to a box, double-click to reset.
 
 ---
 
 ## Input Data Format
 
-Your Plan and Survey files must contain at minimum three columns:
-
-| Column | Description | Units |
+| Column | Required | Notes |
 |---|---|---|
-| **MD**  | Measured depth (along-hole) | m |
-| **Inc** | Inclination (hole deviation from vertical) | degrees |
-| **Azi** | Azimuth (compass bearing)   | degrees |
+| **MD** | Yes | Metres or feet |
+| **Inc** | Yes | Degrees, 0 to 180 |
+| **Azi** | Yes | Degrees from north. May be blank where inclination is 0 |
+| TVD, North, East | No | Used to check the calculated positions and to prefill the tie-in |
 
-Accepted formats: `.csv`, `.las`, `.xlsx`, `.xls`. Column names are auto-detected (any header matching `md`, `depth`, `inc`, `azi`, `azim`, etc. will be picked up), but you can re-map manually from the preview dropdowns if needed.
+- Check the detected sheet, header row, columns and units under **Column mapping and units**.
+- Title lines above the header, a units row below it, comma, semicolon or tab separators and decimal commas are accepted.
+- LAS curve units and the `NULL` value are honoured, including wrapped files.
+- Rows are sorted by MD. Rows that cannot be used, and repeated depths, are skipped and listed.
 
-**VS Reference Azimuth** is a separate input (on the Import tab) — the compass bearing used to project North/East into a Vertical Section plane. Default is `0°` (due north).
+```csv
+MD (m),Inc (deg),Azi (deg)
+0,0,0
+500,0,0
+530,1.5,45
+560,3.0,46
+```
+
+Azimuths are used as given: no magnetic declination or grid convergence is applied.
 
 ---
 
 ## Output & Reports
 
-### Comparison table columns
+| File | Contents |
+|---|---|
+| **PDF report** | Key figures, data sources, trajectory overview, deviation summary, warnings, plan view, vertical section, 3D view, profiles, deviation plot, formation tops and thickness, comparison listing, disclaimer |
+| **Excel** | Sheets: Summary, Comparison, Plan, Survey, Formation Tops, Thickness |
+| **CSV** | The table currently shown |
+| **PNG / SVG** | Any plot, with title, units and date |
+
+The built-in PDF fonts cover Western European characters only. Other characters in names are transliterated or shown as `?` in the PDF.
+
+### Comparison columns
 
 | Column | Meaning |
 |---|---|
-| **MD**       | Survey station measured depth |
-| **Plan TVD** | Plan TVD interpolated at that MD |
-| **Svy TVD**  | Survey TVD at that MD |
-| **A/B**      | Above / Below plan (e.g. `2.34 Above`) |
-| **L/R**      | Right / Left of plan (e.g. `0.85 Right`) |
-| **F/B**      | Ahead / Behind plan along plan azimuth |
-| **C-C**      | 3D centre-to-centre distance from plan trajectory |
-| **Pl Inc**   | Plan inclination at that MD |
-| **Sv Inc**   | Survey inclination at that MD |
-| **Svy DLS**  | Survey dogleg severity (°/30 m) |
+| **MD** | Survey station measured depth |
+| **Plan TVD / Svy TVD** | TVD of plan (interpolated) and survey at that MD |
+| **Above/Below** | Vertical offset from the plan |
+| **Left/Right** | Lateral offset, looking along the plan |
+| **Front/Behind** | Horizontal offset along the plan heading |
+| **C-C** | 3D distance to the plan point at the **same MD** |
+| **Closest** | 3D distance to the **nearest** point of the plan |
+| **Svy DLS** | Survey dogleg severity |
 
-### PDF report layout
-
-1. **Page 1 — Cover + Summary.** Header banner, well metadata, Trajectory Overview (Plan vs Survey statistics), Deviation Summary (max/avg/end C-C, max A/B, L/R, F/B).
-2. **Page 2 — Plan View** on its own landscape page, sized to fill the page.
-3. **Page 3 — Vertical Section** on its own landscape page, sized to fill the page.
-4. **Page 4 — Formations.** Formation tops table + thickness statistics (MT / AVT / TVT / TST / Ψ / DLS avg).
-5. **Page 5 — Detailed Comparison.** Full station-by-station table, paginated automatically.
-6. Every page footer includes the well name, page number, and contact line.
-
-Filename convention: `WellPath_Report_<WellName>_YYYY-MM-DD.pdf`.
+Where the plan is vertical (inclination below 0.5°) the heading for Left/Right and Ahead/Behind is the plan's kick-off azimuth. Survey stations outside the planned MD interval are listed in a warning and not compared.
 
 ---
 
-## Minimum Curvature Method
-
-The trajectory is reconstructed by the minimum curvature method:
+## Calculations
 
 ```
 ΔTVD = (ΔMD/2) · (cos I₁ + cos I₂) · RF
 ΔN   = (ΔMD/2) · (sin I₁·cos A₁ + sin I₂·cos A₂) · RF
 ΔE   = (ΔMD/2) · (sin I₁·sin A₁ + sin I₂·sin A₂) · RF
+RF   = (2/β) · tan(β/2),   β = dogleg angle between the two station directions
+VS   = N · cos(φ_VS) + E · sin(φ_VS)
 ```
 
-where `I`, `A` are inclination and azimuth in radians, and the ratio factor is
+Nothing is extrapolated: queries, comparisons and formation picks outside a well's surveyed interval return no value.
 
-```
-RF = (2/β) · tan(β/2),   β = dogleg angle
-cos β = cos(I₂ − I₁) − sin I₁ · sin I₂ · (1 − cos(A₂ − A₁))
-```
+### Formation tops
 
-VS is projected via the configured reference azimuth:
-
-```
-VS = N · cos(φ_VS) + E · sin(φ_VS)
-```
-
-Formation thickness definitions used in the app:
+A top is entered as the TVD at which the reference well picks it (the survey when loaded, otherwise the plan). Its surface is a plane through that pick with the given dip and dip azimuth. On the vertical section each horizon is drawn along the reference well track, so the pick sits on it even when the well turns.
 
 | Symbol | Meaning |
 |---|---|
-| **MT**  | Measured Thickness — along-hole distance between top and bottom picks |
-| **AVT** | Apparent Vertical Thickness — ΔTVD between picks |
-| **TVT** | True Vertical Thickness — TST / cos(dip) |
-| **TST** | True Stratigraphic Thickness — integrated projection of trajectory onto the formation normal |
-| **Ψ**   | Angle between the well axis and the formation normal (steering geometry) |
-
----
-
-## Deploy to GitHub Pages
-
-1. Create a new GitHub repository named **`wellpath-analyst`**.
-2. Commit the project files to the `main` branch:
-   - `index.html`
-   - `styles.css`
-   - the `js/` folder (all eleven modules)
-   - `README.md`
-3. Go to **Settings → Pages**.
-4. Under **Source**, select **Deploy from a branch** → `main` → `/ (root)`.
-5. Save. Your site will be live at:
-
-   ```
-   https://<your-username>.github.io/wellpath-analyst/
-   ```
-
-GitHub usually takes 1–2 minutes after the first push to publish.
+| **MT** | Measured thickness — along-hole distance between top and base picks |
+| **AVT** | Apparent vertical thickness — difference in TVD between the picks |
+| **TST** | True stratigraphic thickness — offset between the picks projected on the bed normal, using the upper top's dip |
+| **TVT** | True vertical thickness — TST / cos(dip) |
+| **Ψ** | Angle between the well axis and the bed normal |
 
 ---
 
@@ -180,16 +159,10 @@ GitHub usually takes 1–2 minutes after the first push to publish.
 
 | Layer | Technology |
 |---|---|
-| UI        | Vanilla HTML + TailwindCSS (CDN) |
-| Icons     | Font Awesome 6 |
-| Fonts     | DM Sans, JetBrains Mono (Google Fonts) |
-| Parsing   | [PapaParse](https://www.papaparse.com/) (CSV), [SheetJS](https://sheetjs.com/) (Excel), custom LAS parser |
-| PDF       | [jsPDF](https://github.com/parallax/jsPDF) + [jspdf-autotable](https://github.com/simonbengtsson/jsPDF-AutoTable) |
-| Plots     | Native HTML5 Canvas (device-pixel-ratio aware) |
-| Math      | Vanilla JS — no numerical library required |
-| Architecture | 11 plain-script modules under `js/`, loaded sequentially — no bundler, no framework |
-
-No framework. No bundler. No server. One HTML file, one stylesheet, eleven JS modules.
+| UI | Vanilla HTML, CSS and JavaScript (design shared with [Directional Well Planner](https://github.com/geoharkat/Directional-Well-Planner)) |
+| Plots | D3.js (SVG) |
+| Parsing | SheetJS (CSV and Excel), built-in LAS reader |
+| Reports | jsPDF, jsPDF-AutoTable, svg2pdf.js |
 
 ### Project structure
 
@@ -197,22 +170,27 @@ No framework. No bundler. No server. One HTML file, one stylesheet, eleven JS mo
 wellpath-analyst/
 ├── index.html
 ├── styles.css
-├── README.md
-└── js/
-    ├── state.js         # global state + formation-band palette
-    ├── utils.js         # toasts, tabs, formatters, about modal
-    ├── mincurve.js      # minimum curvature math + interpolation + trajectory stats
-    ├── parsers.js       # CSV / LAS / XLSX parsers + sample data
-    ├── process.js       # orchestration, range filter, manual station
-    ├── tables.js        # data + comparison tables
-    ├── plots.js         # Plan View + VS drawing + PNG export
-    ├── formations.js    # formation tops CRUD + thickness stats
-    ├── query.js         # point-query tab
-    ├── pdf.js           # multi-page PDF report generator
-    └── interactions.js  # DOM-ready, zoom drag, hover tooltips
+├── js/
+│   ├── state.js         # application state and constants
+│   ├── utils.js         # DOM helpers, formatting, toasts
+│   ├── mincurve.js      # units, minimum curvature, interpolation, tie-in, comparison
+│   ├── parsers.js       # CSV / LAS / Excel reading, column detection, sample data
+│   ├── formations.js    # formation planes, thickness, formation controls
+│   ├── process.js       # import, recalculation, range filter, settings
+│   ├── query.js         # depth query
+│   ├── tables.js        # summary figures and tables
+│   ├── plots.js         # D3 charts
+│   ├── export.js        # CSV, Excel, PNG / SVG
+│   ├── pdf.js           # PDF report
+│   └── interactions.js  # start-up and events
+└── tests/core.test.js   # node --test tests/core.test.js
 ```
 
-Each module owns a single concern and exposes functions as globals so that inline `onclick=` handlers in the HTML keep working without a build step. Dependencies flow downward in the order above — leaf modules (`state`, `utils`, `mincurve`) load first so everything else can rely on them.
+---
+
+## Deploy to GitHub Pages
+
+In **Settings → Pages**, choose **Deploy from a branch** → `main` → `/ (root)`.
 
 ---
 
